@@ -1,0 +1,69 @@
+<!--
+  Livox Mid-360 robot description for Cartographer SLAM
+
+  TF tree (published by Cartographer + robot_state_publisher):
+    camera_init (map_frame, global fixed)
+    └── odom (odom_frame, loop closure absorbed here)
+        └── body (tracking_frame, robot base)
+            ├── imu_link (IMU sensor)
+            └── livox_frame (LiDAR sensor, compatible with livox_driver)
+-->
+
+<robot name="livox_mid360_robot">
+  <material name="orange">
+    <color rgba="1.0 0.5 0.2 1" />
+  </material>
+  <material name="gray">
+    <color rgba="0.2 0.2 0.2 1" />
+  </material>
+  <material name="blue">
+    <color rgba="0.2 0.4 0.8 1" />
+  </material>
+
+  <!-- Base link (robot body) -->
+  <link name="body">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.1 0.1 0.05" />
+      </geometry>
+      <material name="gray" />
+    </visual>
+  </link>
+
+  <!-- IMU link (integrated in Mid-360) -->
+  <link name="imu_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.02 0.02 0.01" />
+      </geometry>
+      <material name="orange" />
+    </visual>
+  </link>
+
+  <!-- Livox Mid-360 LiDAR -->
+  <link name="livox_frame">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <cylinder length="0.063" radius="0.043" />
+      </geometry>
+      <material name="blue" />
+    </visual>
+  </link>
+
+  <!-- IMU is at body origin (Mid-360 has integrated IMU) -->
+  <joint name="body_to_imu" type="fixed">
+    <parent link="body" />
+    <child link="imu_link" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </joint>
+
+  <!-- LiDAR mounted at body origin -->
+  <joint name="body_to_livox" type="fixed">
+    <parent link="body" />
+    <child link="livox_frame" />
+    <origin xyz="0 0 0" rpy="0 0 0" />
+  </joint>
+</robot>
