@@ -24,13 +24,14 @@ options = {
   map_builder = MAP_BUILDER,
   trajectory_builder = TRAJECTORY_BUILDER,
 
-  -- Frame configuration (compatible with FAST-LIO)
-  -- TF tree: camera_init -> odom -> body -> {imu_link, livox_frame}
-  map_frame = "camera_init",
-  tracking_frame = "body",
-  published_frame = "body",
+  -- Frame configuration
+  -- TF tree: map -> odom -> base_link -> {imu_link, livox_frame, sonar_link}
+  -- Note: base_link children are published by boat_description URDF
+  map_frame = "map",
+  tracking_frame = "base_link",
+  published_frame = "base_link",
   odom_frame = "odom",
-  provide_odom_frame = true,
+  provide_odom_frame = true,         -- publish odom frame for consistency
   publish_frame_projected_to_2d = true,
   use_pose_extrapolator = true,
 
@@ -49,6 +50,7 @@ options = {
   submap_publish_period_sec = 0.3,
   pose_publish_period_sec = 5e-3,
   trajectory_publish_period_sec = 30e-3,
+  publish_odometry = true,             -- /cartographer_2d/odometry
 
   -- Sampling ratios (1.0 = use all data)
   rangefinder_sampling_ratio = 1.,

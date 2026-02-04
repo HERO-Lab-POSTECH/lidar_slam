@@ -10,8 +10,8 @@
         map_file_path: "./test.pcd"
 
         tf:
-            odom_frame: "camera_init"       # parent frame for odometry
-            body_frame: "body"              # child frame
+            odom_frame: "map"               # global fixed frame (SLAM origin)
+            body_frame: "base_link"         # robot body frame
 
         common:
             lid_topic:  "/sensor/lidar/livox_mid360/points"

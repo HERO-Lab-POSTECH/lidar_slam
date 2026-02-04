@@ -7,7 +7,8 @@ Arguments:
   input_type    : 'livox' or 'pointcloud2' (default: 'livox')
   localization  : 'true' or 'false' (default: 'false')
   use_sim_time  : 'true' or 'false' (default: 'false')
-  use_rviz      : 'true' or 'false' (default: 'true')
+  use_rviz      : 'true' or 'false' (default: 'false')
+  foxglove      : 'true' or 'false' (default: 'true') - Launch Foxglove bridge (ws://localhost:8765)
   resolution    : Occupancy grid resolution (default: '0.05')
   load_state_filename : Path to .pbstream file for localization/continued mapping
   save_state_filename : Path to save .pbstream file on shutdown
@@ -20,11 +21,12 @@ Configuration selection:
   pointcloud2 localization -> pointcloud2_localization.lua
 
 TF Tree:
-  camera_init (map_frame)
+  map (map_frame)
   └── odom (odom_frame)
-      └── body (tracking_frame)
+      └── base_link (tracking_frame)
+          ├── livox_frame
           ├── imu_link
-          └── livox_frame
+          └── sonar_link
 
 Topics:
   Input (livox mode):
@@ -57,6 +59,7 @@ Examples:
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, LogInfo, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
+from launch.conditions import IfCondition
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 import os
@@ -68,6 +71,7 @@ def launch_setup(context):
     input_type = LaunchConfiguration('input_type').perform(context).lower()
     localization = LaunchConfiguration('localization').perform(context).lower() == 'true'
     use_rviz = LaunchConfiguration('use_rviz').perform(context).lower() == 'true'
+    use_foxglove = LaunchConfiguration('foxglove').perform(context).lower() == 'true'
     use_sim_time = LaunchConfiguration('use_sim_time').perform(context)
     resolution = LaunchConfiguration('resolution').perform(context)
     load_state_filename = LaunchConfiguration('load_state_filename').perform(context)
@@ -80,9 +84,16 @@ def launch_setup(context):
     if save_state_filename and not save_state_filename.endswith('.pbstream'):
         save_state_filename += '.pbstream'
 
+    # Auto-create directory for save_state_filename
+    if save_state_filename:
+        save_dir = os.path.dirname(save_state_filename)
+        if save_dir:
+            os.makedirs(save_dir, exist_ok=True)
+
     # Package paths
     pkg_share = FindPackageShare('cartographer_slam').find('cartographer_slam')
-    urdf_file = os.path.join(pkg_share, 'urdf', 'livox_mid360.urdf')
+    boat_desc_share = FindPackageShare('boat_description').find('boat_description')
+    urdf_file = os.path.join(boat_desc_share, 'urdf', 'boat.urdf')
     configuration_directory = os.path.join(pkg_share, 'config')
     rviz_config_file = os.path.join(pkg_share, 'rviz', 'livox_mid360.rviz')
 
@@ -166,6 +177,15 @@ def launch_setup(context):
             output='screen'
         ))
 
+    # Foxglove bridge
+    if use_foxglove:
+        nodes.append(Node(
+            package='foxglove_bridge',
+            executable='foxglove_bridge',
+            parameters=[{'use_sim_time': use_sim_time == 'true'}],
+            output='screen'
+        ))
+
     return nodes
 
 
@@ -177,8 +197,10 @@ def generate_launch_description():
                               description='Use pure localization mode (requires load_state_filename)'),
         DeclareLaunchArgument('use_sim_time', default_value='false',
                               description='Use simulation time'),
-        DeclareLaunchArgument('use_rviz', default_value='true',
+        DeclareLaunchArgument('use_rviz', default_value='false',
                               description='Launch RViz'),
+        DeclareLaunchArgument('foxglove', default_value='true',
+                              description='Launch Foxglove bridge (connect via ws://localhost:8765)'),
         DeclareLaunchArgument('resolution', default_value='0.05',
                               description='Occupancy grid resolution'),
         DeclareLaunchArgument('load_state_filename', default_value='',

@@ -55,9 +55,12 @@ localization_node:
     save_scan_path: "/tmp/localization_scans/"
 
     # TF frame names
+    # TF tree: map -> odom -> base_link
+    # Localization broadcasts: map -> odom
+    # FAST-LIO Mapping broadcasts: odom -> base_link
     map_frame: "map"
-    odom_frame: "camera_init"
-    body_frame: "body"
+    odom_frame: "odom"
+    body_frame: "base_link"
 
     # OccupancyGrid generation from loaded PCD map
     # Published once at startup with transient_local QoS

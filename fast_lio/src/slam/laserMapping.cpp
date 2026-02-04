@@ -37,6 +37,7 @@
 #include <math.h>
 #include <thread>
 #include <fstream>
+#include <filesystem>
 #include <csignal>
 #include <chrono>
 #include <unistd.h>
@@ -594,8 +595,18 @@ void publish_map(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub
 
 void save_to_pcd()
 {
+    // Auto-append .pcd extension if missing
+    std::string save_path = map_file_path;
+    if (save_path.size() < 4 || save_path.substr(save_path.size() - 4) != ".pcd") {
+        save_path += ".pcd";
+    }
+
+    // Auto-create parent directories if not exist
+    std::filesystem::path file_path(save_path);
+    std::filesystem::create_directories(file_path.parent_path());
+
     pcl::PCDWriter pcd_writer;
-    pcd_writer.writeBinary(map_file_path, *pcl_wait_pub);
+    pcd_writer.writeBinary(save_path, *pcl_wait_pub);
 }
 
 template<typename T>
@@ -1184,9 +1195,17 @@ int main(int argc, char** argv)
         string all_points_dir;
         if (!pcd_save_path.empty()) {
             all_points_dir = pcd_save_path;
+            // Auto-append .pcd extension if missing
+            if (all_points_dir.size() < 4 || all_points_dir.substr(all_points_dir.size() - 4) != ".pcd") {
+                all_points_dir += ".pcd";
+            }
         } else {
             all_points_dir = string(ROOT_DIR) + "PCD/scans.pcd";
         }
+
+        // Auto-create parent directories if not exist
+        std::filesystem::path file_path(all_points_dir);
+        std::filesystem::create_directories(file_path.parent_path());
 
         if (pcl_wait_save->size() > 0)
         {

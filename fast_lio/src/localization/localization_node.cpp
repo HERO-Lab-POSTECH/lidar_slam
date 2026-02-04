@@ -211,6 +211,11 @@ public:
             return;
         }
 
+        // Auto-append .pcd extension if missing
+        if (map_path.size() < 4 || map_path.substr(map_path.size() - 4) != ".pcd") {
+            map_path += ".pcd";
+        }
+
         RCLCPP_INFO(this->get_logger(), "Loading map from: %s", map_path.c_str());
         if (!open3d::io::ReadPointCloud(map_path, *pcd_map_ori_))
         {
@@ -235,23 +240,19 @@ public:
         RCLCPP_INFO(this->get_logger(), "Map downsampled to %zu points", pcd_map_fine_->points_.size());
 
         // Create publishers
-        pub_odom2map_ = this->create_publisher<nav_msgs::msg::Odometry>("/localization/odom2map", 10);
-        pub_body2map_ = this->create_publisher<nav_msgs::msg::Odometry>("/localization/body2map", 10);
-        pub_body2map_kalman_ = this->create_publisher<nav_msgs::msg::Odometry>("/localization/body2map_kalman", 10);
-        pub_pose_ = this->create_publisher<geometry_msgs::msg::PoseStamped>("/localization/pose", 10);
-        pub_confidence_ = this->create_publisher<std_msgs::msg::Float32>("/localization/confidence", 10);
-        pub_delay_ms_ = this->create_publisher<std_msgs::msg::Float32>("/localization/delay_ms", 10);
+        pub_odometry_ = this->create_publisher<nav_msgs::msg::Odometry>("/fast_lio/localization/odometry", 10);
+        pub_confidence_ = this->create_publisher<std_msgs::msg::Float32>("/fast_lio/localization/confidence", 10);
 
         // Use transient_local QoS for map so late subscribers receive it
         rclcpp::QoS map_qos(1);
         map_qos.transient_local();
-        pub_map_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/localization/map", map_qos);
+        pub_map_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/fast_lio/localization/map", map_qos);
 
         // OccupancyGrid publisher (transient_local for late subscribers)
         if (og_publish_)
         {
             pub_occupancy_grid_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-                "/localization/occupancy_grid", map_qos);
+                "/fast_lio/localization/occupancy_grid", map_qos);
         }
 
         // Create subscribers
@@ -541,17 +542,9 @@ private:
         // Compute body to map
         Eigen::Matrix4d mat_body2map = mat_odom2map_ * mat_body2odom_;
 
-        // Publish body2map odometry
-        pub_body2map_->publish(
-            createOdometryMsg(msg->header.stamp, map_frame_, body_frame_, mat_body2map));
-
-        // Publish odom2map odometry
-        pub_odom2map_->publish(
-            createOdometryMsg(msg->header.stamp, map_frame_, odom_frame_, mat_odom2map_));
-
         // TF is now published by tfTimerCallback at 50Hz
 
-        // Publish pose with Kalman filtering
+        // Publish odometry with Kalman filtering
         if (loc_initialized_)
         {
             // Apply Kalman filtering to body2map position
@@ -570,27 +563,14 @@ private:
             if (!std::isnan(filtered_y)) mat_body2map_kalman(1, 3) = filtered_y;
             if (!std::isnan(filtered_z)) mat_body2map_kalman(2, 3) = filtered_z;
 
-            // Publish Kalman-filtered body2map
-            auto body2map_kalman_msg = createOdometryMsg(
-                msg->header.stamp, map_frame_, body_frame_, mat_body2map_kalman);
-            pub_body2map_kalman_->publish(body2map_kalman_msg);
-
-            // Publish pose (Kalman-filtered)
-            geometry_msgs::msg::PoseStamped pose_msg;
-            pose_msg.header.stamp = msg->header.stamp;
-            pose_msg.header.frame_id = map_frame_;
-            pose_msg.pose = body2map_kalman_msg.pose.pose;
-            pub_pose_->publish(pose_msg);
+            // Publish Kalman-filtered odometry
+            pub_odometry_->publish(
+                createOdometryMsg(msg->header.stamp, map_frame_, body_frame_, mat_body2map_kalman));
 
             // Publish confidence
             std_msgs::msg::Float32 conf_msg;
             conf_msg.data = current_fitness_;
             pub_confidence_->publish(conf_msg);
-
-            // Publish processing delay
-            std_msgs::msg::Float32 delay_msg;
-            delay_msg.data = (this->now() - msg->header.stamp).seconds() * 1000.0;
-            pub_delay_ms_->publish(delay_msg);
         }
     }
 
@@ -1136,12 +1116,8 @@ private:
     rclcpp::TimerBase::SharedPtr tf_timer_;
 
     // Publishers
-    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odom2map_;
-    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_body2map_;
-    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_body2map_kalman_;
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_pose_;
+    rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odometry_;
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_confidence_;
-    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_delay_ms_;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_map_;
     rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_occupancy_grid_;
 

@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<robot name="boat">
+  <!-- Base link: Main reference frame for the boat platform -->
+  <link name="base_link"/>
+
+  <!-- Legacy alias: base_link -> body (for old bag file compatibility) -->
+  <link name="body"/>
+  <joint name="base_to_body" type="fixed">
+    <parent link="base_link"/>
+    <child link="body"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- LiDAR frame: Livox MID360 mounted at base_link origin -->
+  <link name="livox_frame"/>
+  <joint name="base_to_livox" type="fixed">
+    <parent link="base_link"/>
+    <child link="livox_frame"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- IMU link: IMU sensor co-located with LiDAR -->
+  <link name="imu_link"/>
+  <joint name="base_to_imu" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Sonar link: Underwater sonar sensors (Oculus M750D + Ping360) -->
+  <!-- Located 0.1m below base_link (underwater) -->
+  <link name="sonar_link"/>
+  <joint name="base_to_sonar" type="fixed">
+    <parent link="base_link"/>
+    <child link="sonar_link"/>
+    <origin xyz="0 0 -0.1" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Legacy alias: sonar_link -> oculus (for old bag file compatibility) -->
+  <link name="oculus"/>
+  <joint name="sonar_to_oculus" type="fixed">
+    <parent link="sonar_link"/>
+    <child link="oculus"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+</robot>

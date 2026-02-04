@@ -247,7 +247,7 @@ install(DIRECTORY include/
   DESTINATION include/${PROJECT_NAME}
 )
 
-install(DIRECTORY config rviz urdf launch
+install(DIRECTORY config rviz launch
   DESTINATION share/${PROJECT_NAME}/
 )
 
