@@ -98,7 +98,7 @@ void Run() {
 
   if (!FLAGS_save_state_filename.empty()) {
     node->SerializeState(FLAGS_save_state_filename,
-                        true /* include_unfinished_submaps */);
+                        false /* include_unfinished_submaps - false prevents double rendering */);
 
     // Also save 2D map (pgm + yaml) alongside the pbstream file
     LOG(INFO) << "Generating 2D map from saved state...";

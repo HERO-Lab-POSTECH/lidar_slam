@@ -251,6 +251,12 @@ install(DIRECTORY config rviz launch
   DESTINATION share/${PROJECT_NAME}/
 )
 
+# Python scripts
+install(PROGRAMS
+  scripts/trajectory_filter_node.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 # ==============================================================================
 # Export
 # ==============================================================================

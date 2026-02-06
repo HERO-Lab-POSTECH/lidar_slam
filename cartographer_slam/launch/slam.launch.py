@@ -154,17 +154,50 @@ def launch_setup(context):
     ))
 
     # Occupancy grid node
-    nodes.append(Node(
-        package='cartographer_slam',
-        executable='cartographer_occupancy_grid_node',
-        name='cartographer_occupancy_grid_node',
-        parameters=[
-            {'use_sim_time': use_sim_time == 'true'},
-            {'resolution': float(resolution)},
-            {'publish_period_sec': 1.0}
-        ],
-        output='screen'
-    ))
+    if localization:
+        # Localization mode: use pbstream_map_publisher for clean static map
+        nodes.append(Node(
+            package='cartographer_slam',
+            executable='cartographer_pbstream_map_publisher',
+            name='cartographer_map_publisher',
+            arguments=[
+                '-pbstream_filename', load_state_filename,
+                '-resolution', resolution,
+            ],
+            parameters=[{'use_sim_time': use_sim_time == 'true'}],
+            remappings=[('map', '/cartographer_2d/map')],
+            output='screen'
+        ))
+    else:
+        # Mapping mode: use real-time occupancy grid node
+        nodes.append(Node(
+            package='cartographer_slam',
+            executable='cartographer_occupancy_grid_node',
+            name='cartographer_occupancy_grid_node',
+            parameters=[
+                {'use_sim_time': use_sim_time == 'true'},
+                {'resolution': float(resolution)},
+                {'publish_period_sec': 1.0}
+            ],
+            output='screen'
+        ))
+
+    # Trajectory filter (localization mode only) - filters out frozen trajectory
+    if localization:
+        nodes.append(Node(
+            package='cartographer_slam',
+            executable='trajectory_filter_node.py',
+            name='trajectory_filter_node',
+            parameters=[
+                {'use_sim_time': use_sim_time == 'true'},
+                {'frozen_trajectory_ids': [0]},  # Filter trajectory 0 (frozen map)
+            ],
+            remappings=[
+                ('trajectory_node_list', '/cartographer_2d/trajectory_nodes'),
+                ('trajectory_node_list_filtered', '/cartographer_2d/trajectory_nodes_filtered'),
+            ],
+            output='screen'
+        ))
 
     # RViz
     if use_rviz:

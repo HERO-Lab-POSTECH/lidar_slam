@@ -1,0 +1,207 @@
+{
+  "configById": {
+    "3D!main": {
+      "cameraState": {
+        "perspective": true,
+        "distance": 30,
+        "phi": 45,
+        "thetaOffset": 45,
+        "targetOffset": [0, 0, 0],
+        "target": [0, 0, 0],
+        "targetOrientation": [0, 0, 0, 1],
+        "fovy": 45,
+        "near": 0.5,
+        "far": 5000
+      },
+      "followMode": "follow-pose",
+      "followTf": "base_link",
+      "scene": {
+        "backgroundColor": "#000000",
+        "enableStats": false,
+        "transforms": {
+          "showLabel": true,
+          "axisScale": 1,
+          "lineWidth": 0.02
+        }
+      },
+      "transforms": {
+        "frame:base_link": { "visible": true },
+        "frame:map": { "visible": true },
+        "frame:odom": { "visible": false },
+        "frame:livox_frame": { "visible": false },
+        "frame:sonar_link": { "visible": true }
+      },
+      "topics": {
+        "/sonar_3d_mapper/point_cloud": {
+          "visible": true,
+          "colorField": "z",
+          "colorMode": "colormap",
+          "colorMap": "rainbow",
+          "pointSize": 5
+        },
+        "/map_visualizer/point_cloud": {
+          "visible": true,
+          "colorField": "z",
+          "colorMode": "colormap",
+          "colorMap": "turbo",
+          "pointSize": 3
+        },
+        "/map_visualizer/octomap": {
+          "visible": true,
+          "colorField": "z",
+          "colorMode": "colormap",
+          "colorMap": "rainbow"
+        },
+        "cartographer_2d/map": {
+          "visible": true
+        },
+        "cartographer_2d/scan_matched_points2": {
+          "visible": true,
+          "colorMode": "flat",
+          "flatColor": "#ff0000",
+          "pointSize": 3
+        },
+        "cartographer_2d/trajectory_nodes": {
+          "visible": true
+        },
+        "cartographer_2d/submaps": {
+          "visible": true
+        },
+        "cartographer_2d/odometry": {
+          "visible": true,
+          "type": "arrow",
+          "arrowScale": [0.5, 0.1, 0.1],
+          "color": "#0080ff"
+        }
+      },
+      "layers": {
+        "grid": {
+          "layerId": "foxglove.Grid",
+          "visible": true,
+          "size": 50,
+          "divisions": 50,
+          "color": "#a0a0a4",
+          "lineWidth": 1
+        }
+      },
+      "publish": {
+        "type": "point",
+        "poseTopic": "/goal_pose",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose"
+      }
+    },
+    "Image!sonar": {
+      "imageMode": {
+        "imageTopic": "/sensor/sonar/oculus/m3000d/image",
+        "rotation": 0,
+        "flipHorizontal": false,
+        "flipVertical": false,
+        "minValue": 0,
+        "maxValue": 1,
+        "colorMode": "gradient",
+        "colorMap": "turbo"
+      },
+      "synchronize": true
+    },
+    "RawMessages!odom": {
+      "diffEnabled": false,
+      "showFullMessageForDiff": false,
+      "topicPath": "cartographer_2d/odometry"
+    },
+    "Plot!pose": {
+      "paths": [
+        {
+          "value": "cartographer_2d/odometry.pose.pose.position.x",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "color": "#ff0000",
+          "label": "X"
+        },
+        {
+          "value": "cartographer_2d/odometry.pose.pose.position.y",
+          "enabled": true,
+          "timestampMethod": "receiveTime",
+          "color": "#00ff00",
+          "label": "Y"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": true,
+      "isSynced": true,
+      "xAxisVal": "timestamp"
+    },
+    "3D!topdown": {
+      "cameraState": {
+        "perspective": false,
+        "distance": 50,
+        "phi": 0,
+        "thetaOffset": 0,
+        "targetOffset": [0, 0, 0],
+        "target": [0, 0, 0],
+        "targetOrientation": [0, 0, 0, 1],
+        "fovy": 45,
+        "near": 0.5,
+        "far": 5000
+      },
+      "followMode": "follow-pose",
+      "followTf": "base_link",
+      "scene": {
+        "backgroundColor": "#303030"
+      },
+      "topics": {
+        "cartographer_2d/map": {
+          "visible": true
+        },
+        "cartographer_2d/scan_matched_points2": {
+          "visible": true,
+          "colorMode": "flat",
+          "flatColor": "#ff0000",
+          "pointSize": 3
+        },
+        "cartographer_2d/trajectory_nodes": {
+          "visible": true
+        }
+      },
+      "layers": {
+        "grid": {
+          "layerId": "foxglove.Grid",
+          "visible": true,
+          "size": 100,
+          "divisions": 100,
+          "color": "#505050",
+          "lineWidth": 1
+        }
+      }
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": {
+    "speed": 1.0
+  },
+  "layout": {
+    "direction": "row",
+    "first": {
+      "direction": "column",
+      "first": "3D!main",
+      "second": "3D!topdown",
+      "splitPercentage": 65
+    },
+    "second": {
+      "direction": "column",
+      "first": "Image!sonar",
+      "second": {
+        "direction": "column",
+        "first": "Plot!pose",
+        "second": "RawMessages!odom",
+        "splitPercentage": 50
+      },
+      "splitPercentage": 40
+    },
+    "splitPercentage": 70
+  }
+}

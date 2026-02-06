@@ -49,7 +49,7 @@ options = {
   lookup_transform_timeout_sec = 0.2,
   submap_publish_period_sec = 0.3,
   pose_publish_period_sec = 5e-3,
-  trajectory_publish_period_sec = 30e-3,
+  trajectory_publish_period_sec = 30e-3,  -- NOTE: Set to 999999. to hide frozen trajectory in localization mode
   publish_odometry = true,             -- /cartographer_2d/odometry
 
   -- Sampling ratios (1.0 = use all data)

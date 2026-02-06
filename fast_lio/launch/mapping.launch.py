@@ -6,13 +6,17 @@ Livox MID-360 LiDAR-Inertial Odometry for 3D SLAM mapping.
 ================================================================================
 LAUNCH ARGUMENTS
 ================================================================================
-  use_sim_time  : Use simulation time                     (default: 'false')
-  config_path   : FAST-LIO config directory               (default: <pkg>/config/slam)
-  config_file   : Config file name                        (default: 'mid360.yaml')
-  rviz          : Launch RViz                             (default: 'true')
-  rviz_cfg      : RViz config file path                   (default: <pkg>/rviz/fastlio.rviz)
-  save_map_path : Path to save PCD map on shutdown        (default: '' = use default path)
-  foxglove      : Launch Foxglove bridge (ws://localhost:8765) (default: 'true')
+  use_sim_time    : Use simulation time                     (default: 'false')
+  config_path     : FAST-LIO config directory               (default: <pkg>/config/slam)
+  config_file     : Config file name                        (default: 'mid360.yaml')
+  rviz            : Launch RViz                             (default: 'true')
+  rviz_cfg        : RViz config file path                   (default: <pkg>/rviz/fastlio.rviz)
+  save_map_path   : Path to save PCD map on shutdown        (default: '' = use default path)
+  foxglove        : Launch Foxglove bridge (ws://localhost:8765) (default: 'true')
+  qos_reliability : QoS reliability for sensor subscribers  (default: 'reliable')
+                    Options: reliable, best_effort
+                    Note: Use best_effort when playing back old bag files recorded
+                          with BEST_EFFORT QoS
 
 ================================================================================
 TF TREE (provided by boat_description URDF)
@@ -52,6 +56,9 @@ EXAMPLES
 
   # Disable Foxglove bridge
   ros2 launch fast_lio mapping.launch.py foxglove:=false
+
+  # BEST_EFFORT QoS (for old bag files)
+  ros2 launch fast_lio mapping.launch.py use_sim_time:=true qos_reliability:=best_effort
 """
 
 import os.path
@@ -110,13 +117,20 @@ def generate_launch_description():
         'foxglove', default_value='true',
         description='Launch Foxglove bridge (connect via ws://localhost:8765)'
     )
+    declare_qos_reliability_cmd = DeclareLaunchArgument(
+        'qos_reliability', default_value='reliable',
+        description='QoS reliability for sensor subscribers: reliable or best_effort'
+    )
+
+    qos_reliability = LaunchConfiguration('qos_reliability')
 
     fast_lio_node = Node(
         package='fast_lio',
         executable='fastlio_mapping',
         parameters=[PathJoinSubstitution([config_path, config_file]),
                     {'use_sim_time': use_sim_time,
-                     'pcd_save.save_path': save_map_path}],
+                     'pcd_save.save_path': save_map_path,
+                     'qos_reliability': qos_reliability}],
         output='screen'
     )
     rviz_node = Node(
@@ -148,6 +162,7 @@ def generate_launch_description():
     ld.add_action(declare_rviz_config_path_cmd)
     ld.add_action(declare_save_map_path_cmd)
     ld.add_action(declare_foxglove_cmd)
+    ld.add_action(declare_qos_reliability_cmd)
 
     ld.add_action(robot_state_publisher)
     ld.add_action(fast_lio_node)
