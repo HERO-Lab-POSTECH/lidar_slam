@@ -54,6 +54,15 @@ Examples:
   # PointCloud2 Localization
   ros2 launch cartographer_slam slam.launch.py input_type:=pointcloud2 \\
     localization:=true load_state_filename:=/path/to/map.pbstream
+
+  # Continue mapping from existing map (load + save to different path)
+  # NOTE: save_state_filename is REQUIRED to save results.
+  #       Without it, mapping runs but nothing is saved on shutdown.
+  ros2 launch cartographer_slam slam.launch.py \\
+    load_state_filename:=/path/to/map_v2.pbstream \\
+    load_frozen_state:=false \\
+    save_state_filename:=/path/to/map_v3.pbstream \\
+    use_sim_time:=true
 """
 
 from launch import LaunchDescription
