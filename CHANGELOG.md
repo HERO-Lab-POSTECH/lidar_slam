@@ -1,5 +1,27 @@
 # CHANGELOG - lidar_slam
 
+## [Unreleased] — Phase B-2a: localization_engine split (refactor)
+
+### Changed
+- `localization_node.cpp` 1,107줄 → 430줄 (-677, ROS2 plumbing만 남김)
+- 알고리즘 메서드 9종 (`localizationLoop`, `initializeLocalization`, `performGlobalLocalizationWithFitness`, `performLocalization`, `performLocalizationStep`, `prepareScanForGlobalLocalization`, `ensureMapFpfhComputed`, `generateTranslationCandidates`, `evaluateSingleHypothesis`) 본체를 `localization_engine.cpp`로 이동
+- 클래스 구조 무변경: `LocalizationNode`는 단일 클래스 그대로, 메서드 정의만 두 .cpp로 split
+
+### Added
+- `fast_lio/include/fast_lio/localization/localization_node.h` — 클래스 선언 (171줄)
+- `fast_lio/src/localization/localization_engine.cpp` — 알고리즘 본체 (567줄)
+- `fast_lio/scripts/regression_test_localization.sh` — Localization 회귀 (KIRO map_v1.pcd + bag, use_global_localization=false로 결정적 ICP)
+- `fast_lio/scripts/regression_plot.py` — baseline vs candidate trajectory 시각 비교
+
+### Verification
+- colcon build PASS (29.5s)
+- baseline (post-B-1) vs candidate odometry 60s replay → 마지막 100 포인트 평균 위치 차 **0.02 cm** (부유점 잡음 수준)
+- Trajectory plot: XY/Z 궤적 완전 일치 (육안 식별 불가)
+
+### Notes
+- `use_global_localization: false` + 고정 `initial_pose`로 ICP만 동작 → 결정적 비교. 실제 운용 시는 `use_global_localization: true`(기본)로 사용.
+- Phase B-2b (`tf_publisher` 추출)는 별도 PR.
+
 ## [Unreleased] — Phase B-1: KalmanFilter & pose_utils 추출 (refactor)
 
 ### Changed
