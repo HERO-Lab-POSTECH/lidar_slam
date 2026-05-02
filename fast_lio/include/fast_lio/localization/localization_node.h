@@ -16,15 +16,14 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/odometry.hpp>
-#include <nav_msgs/msg/occupancy_grid.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <std_msgs/msg/float32.hpp>
 #include <tf2_ros/buffer.h>
-#include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
 
 #include "fast_lio/localization/kalman_filter.h"
+#include "fast_lio/localization/tf_publisher.h"
 
 /**
  * @brief Map-based localization node using Open3D ICP registration.
@@ -75,23 +74,18 @@ private:
     void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
     void cloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg);
     void initialPoseCallback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
-    void publishMap();
-    void publishOccupancyGrid();
-    void tfTimerCallback();
-    void publishTF(const rclcpp::Time& stamp);
 
     // ===== Members =====
-    // TF
+    // TF (lookup buffer kept for future use; broadcasting handled by tf_publisher_)
     tf2_ros::Buffer tf_buffer_;
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
-    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
-    rclcpp::TimerBase::SharedPtr tf_timer_;
+
+    // TF / map / occupancy grid publishing
+    std::unique_ptr<fast_lio::localization::TfPublisher> tf_publisher_;
 
     // Publishers
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odometry_;
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr pub_confidence_;
-    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub_map_;
-    rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr pub_occupancy_grid_;
 
     // Subscribers
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr sub_odom_;
@@ -122,12 +116,6 @@ private:
     bool save_scan_ = false;
     std::string save_scan_path_ = "/tmp/localization_scans/";
     int scan_save_count_ = 0;
-
-    // OccupancyGrid parameters
-    bool og_publish_ = true;
-    double og_resolution_ = 0.05;
-    double og_z_min_ = -0.5;
-    double og_z_max_ = 1.5;
 
     // Global localization (FPFH)
     std::shared_ptr<open3d::geometry::PointCloud> pcd_map_global_;
