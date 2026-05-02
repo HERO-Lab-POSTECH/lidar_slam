@@ -1,6 +1,23 @@
 # CHANGELOG - lidar_slam
 
-## [Unreleased] — Phase A: dead code & config cleanup (refactor)
+## [Unreleased] — Phase B-1: KalmanFilter & pose_utils 추출 (refactor)
+
+### Changed
+- `localization_node.cpp` 1,210줄 → 1,107줄 (-103줄)
+- 호출부는 `pose_utils::` namespace prefix로 갱신 (`createOdometryMsg`, `createCropBox`, `limitPointCloud`)
+- `KalmanFilter` 호출은 `using` alias로 무변경
+
+### Added
+- `fast_lio/include/fast_lio/localization/kalman_filter.h` — 1D Kalman Filter (header-only, ROS2/Open3D 의존 0)
+- `fast_lio/include/fast_lio/localization/pose_utils.h` — pure helper 4종 선언
+- `fast_lio/src/localization/pose_utils.cpp` — `matrixToPose`, `createOdometryMsg`, `createCropBox`, `limitPointCloud` 구현
+- `fast_lio/CMakeLists.txt`: `localization_pose_utils` 라이브러리 등록 + `localization_node`에 링크
+
+### Notes
+- 알고리즘 영향 0 (단순 cut/paste). 회귀 테스트 의무 약함.
+- `localization_node.cpp`에 남은 SRP 위반(performLocalizationStep ~210줄 등)은 Phase B-2에서 처리.
+
+## [2026-05-02] — Phase A: dead code & config cleanup (refactor)
 
 ### Removed
 - **Vendored dead headers** (~4,656 LOC, 0 references in any source)

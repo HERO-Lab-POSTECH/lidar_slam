@@ -45,55 +45,11 @@
 #include "fast_lio/localization/open3d_registration.h"
 #include "fast_lio/localization/open3d_conversions.h"
 #include "fast_lio/localization/occupancy_grid_generator.hpp"
+#include "fast_lio/localization/kalman_filter.h"
+#include "fast_lio/localization/pose_utils.h"
 
-/**
- * @brief Simple 1D Kalman Filter for pose smoothing
- *
- * Applied independently to X, Y, Z axes to reduce high-frequency noise
- * from ICP registration results.
- */
-class KalmanFilter
-{
-public:
-    KalmanFilter() : process_var_(0.0), meas_var_(0.0),
-                     post_estimate_(0.0), post_error_estimate_(1.0) {}
-
-    void init(double process_var, double meas_var, double initial_value = 0.0, double initial_error = 1.0)
-    {
-        process_var_ = process_var;
-        meas_var_ = meas_var;
-        post_estimate_ = initial_value;
-        post_error_estimate_ = initial_error;
-    }
-
-    void update(double measurement)
-    {
-        double prior_estimate = post_estimate_;
-        double prior_error = post_error_estimate_ + process_var_;
-
-        double denominator = prior_error + meas_var_;
-
-        // Prevent division by zero
-        if (std::abs(denominator) < 1e-10)
-        {
-            post_estimate_ = measurement;
-            post_error_estimate_ = 1.0;
-            return;
-        }
-
-        double kalman_gain = prior_error / denominator;
-        post_estimate_ = prior_estimate + kalman_gain * (measurement - prior_estimate);
-        post_error_estimate_ = (1 - kalman_gain) * prior_error;
-    }
-
-    double getEstimate() const { return post_estimate_; }
-
-private:
-    double process_var_;
-    double meas_var_;
-    double post_estimate_;
-    double post_error_estimate_;
-};
+using fast_lio::localization::KalmanFilter;
+namespace pose_utils = fast_lio::localization::pose_utils;
 
 class LocalizationNode : public rclcpp::Node
 {
@@ -304,65 +260,6 @@ public:
     }
 
 private:
-    // ==================== Helper Functions ====================
-
-    /**
-     * @brief Convert 4x4 transformation matrix to geometry_msgs::msg::Pose
-     */
-    geometry_msgs::msg::Pose matrixToPose(const Eigen::Matrix4d& mat)
-    {
-        Eigen::Isometry3d iso;
-        iso.matrix() = mat;
-        return tf2::toMsg(iso);
-    }
-
-    /**
-     * @brief Create an Odometry message from transform matrix
-     */
-    nav_msgs::msg::Odometry createOdometryMsg(
-        const rclcpp::Time& stamp,
-        const std::string& frame_id,
-        const std::string& child_frame_id,
-        const Eigen::Matrix4d& transform)
-    {
-        nav_msgs::msg::Odometry msg;
-        msg.header.stamp = stamp;
-        msg.header.frame_id = frame_id;
-        msg.child_frame_id = child_frame_id;
-        msg.pose.pose = matrixToPose(transform);
-        return msg;
-    }
-
-    /**
-     * @brief Create an OrientedBoundingBox for point cloud cropping
-     */
-    std::shared_ptr<open3d::geometry::OrientedBoundingBox> createCropBox(
-        const Eigen::Vector3d& center,
-        const Eigen::Matrix3d& rotation,
-        const Eigen::Vector3d& extent)
-    {
-        auto obb = std::make_shared<open3d::geometry::OrientedBoundingBox>();
-        obb->center_ = center;
-        obb->R_ = rotation;
-        obb->extent_ = extent;
-        return obb;
-    }
-
-    /**
-     * @brief Limit point cloud to maximum number of points via random downsampling
-     */
-    std::shared_ptr<open3d::geometry::PointCloud> limitPointCloud(
-        std::shared_ptr<open3d::geometry::PointCloud> cloud,
-        size_t max_points)
-    {
-        if (cloud->points_.size() > max_points)
-        {
-            double ratio = static_cast<double>(max_points) / cloud->points_.size();
-            return cloud->RandomDownSample(ratio);
-        }
-        return cloud;
-    }
-
     // ==================== Global Localization Helpers ====================
 
     /**
@@ -565,7 +462,7 @@ private:
 
             // Publish Kalman-filtered odometry
             pub_odometry_->publish(
-                createOdometryMsg(msg->header.stamp, map_frame_, body_frame_, mat_body2map_kalman));
+                pose_utils::createOdometryMsg(msg->header.stamp, map_frame_, body_frame_, mat_body2map_kalman));
 
             // Publish confidence
             std_msgs::msg::Float32 conf_msg;
@@ -1018,7 +915,7 @@ private:
             RCLCPP_DEBUG(this->get_logger(), "Updating submap (moved %.2fm > %.2fm threshold)",
                          motion_distance, dis_updatemap_);
 
-            auto OBB_map = createCropBox(
+            auto OBB_map = pose_utils::createCropBox(
                 cur_position,
                 mat_body2map_cur.block<3, 3>(0, 0),
                 Eigen::Vector3d(submap_radius_ * 2, submap_radius_ * 2, submap_radius_));
@@ -1036,7 +933,7 @@ private:
         auto map_crop = pcd_submap_cached_;
 
         // Crop scan
-        auto OBB_scan = createCropBox(
+        auto OBB_scan = pose_utils::createCropBox(
             mat_body2odom_cur.block<3, 1>(0, 3),
             mat_body2odom_cur.block<3, 3>(0, 0),
             Eigen::Vector3d(submap_radius_ * 2, submap_radius_ * 2, submap_radius_));
@@ -1053,8 +950,8 @@ private:
         auto target = map_crop;
 
         // Limit points
-        source = limitPointCloud(source, static_cast<size_t>(max_points_source_));
-        target = limitPointCloud(target, static_cast<size_t>(max_points_target_));
+        source = pose_utils::limitPointCloud(source, static_cast<size_t>(max_points_source_));
+        target = pose_utils::limitPointCloud(target, static_cast<size_t>(max_points_target_));
 
         // Save current odom2map for update calculation
         Eigen::Matrix4d mat_odom2map_cur;
