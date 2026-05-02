@@ -1,5 +1,31 @@
 # CHANGELOG - lidar_slam
 
+## [Unreleased] — Phase A-2: laserMapping.cpp dead code 제거 (refactor)
+
+### Changed
+- `fast_lio/src/slam/laserMapping.cpp` 1,270줄 → 1,097줄 (-173, dead code only — 알고리즘 미수정)
+- `fast_lio/config/slam/mid360.yaml`: `runtime_pos_log_enable`, `pcd_save.interval` 라인 제거 (기능 미구현)
+
+### Removed
+- 12개 BSS 누적 배열 (`T1`, `s_plot[1..11]`) — 각 `MAXN=720000` × 8 B = 70 MB BSS, **`s_plot11[scan_count]`은 callback에서 무조건 작성되어 ~20시간 후 OOB 시한폭탄이었음**
+- `MAXN` 매크로
+- `runtime_pos_log_enable` 파라미터 + 본체 (timer_callback의 if block, main()의 csv 출력, debug fout_pre/out/dbg ofstream, fp FILE*) — 활성화 시 위 OOB 폭탄을 깨움
+- `pcd_save.interval` 파라미터 — 선언만 되고 구현 없음 (yaml 코멘트가 *"may lead to memory crash"*로 인정). C-1에서 실제 의미와 함께 재도입 예정
+- 통계 추적 globals: `kdtree_incremental_time`, `kdtree_search_time`, `kdtree_delete_time`, `match_time`, `solve_time`, `solve_const_H_time`, `kdtree_size_st`, `kdtree_size_end`, `add_point_size`, `kdtree_delete_counter`, `time_log_counter`, `aver_time_*`, `frame_num`
+- `dump_lio_state_to_log()` 함수 — runtime_pos_log 전용
+- `_featsArray` global + `points_cache_collect()`의 dead 코멘트 — 선언만 되고 사용 처 없음
+- `SigHandle()` signal handler — 등록 코드 주석처리 상태로 dead
+- 사용 안 하는 includes: `<fstream>`, `<thread>`, `<csignal>`, `<unistd.h>`, `<visualization_msgs/msg/marker.hpp>`, `<geometry_msgs/msg/vector3.hpp>`
+- 미사용 LaserMappingNode 멤버: `effect_feat_num`, `frame_num`, `deltaT`, `deltaR`, `aver_time_*`, `flg_EKF_converged`, `EKF_stop_flg`, `FILE *fp`, `ofstream fout_*`, ~LaserMappingNode 빈 destructor
+
+### Notes
+- A-2는 알고리즘 변경 0%. 회귀 측정 의무 없음. 모든 제거 객체가 검증 가능하게 dead 였음 — 통계용 globals들은 `runtime_pos_log` 블록 안에서만 read, 그 블록은 yaml/launch 어디서도 enable 안 됨.
+- 다음 phase: **C-1** — `pcl_wait_save` interval-based flush + mutex + map_save 서비스 fix (이게 사용자가 보고한 "장시간 fast_lio 운용 시 RAM 먹통" 문제의 fix).
+
+### Verification
+- colcon build PASS (61s)
+- 남은 BSS 80 MB는 모두 `ikdtree` SLAM 자료구조 (76 MB) + `res_last`/`point_selected_surf` (500 KB) — 전부 SLAM 필수.
+
 ## [Unreleased] — Phase B-2b: TfPublisher 추출 (refactor)
 
 ### Changed
