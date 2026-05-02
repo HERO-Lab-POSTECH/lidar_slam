@@ -211,6 +211,22 @@ ament_target_dependencies(occupancy_grid_generator
   nav_msgs
 )
 
+# ========== Localization Pose Utilities Library ==========
+add_library(localization_pose_utils
+  src/localization/pose_utils.cpp
+)
+target_link_libraries(localization_pose_utils
+  ${Open3D_LIBRARIES}
+)
+ament_target_dependencies(localization_pose_utils
+  rclcpp
+  geometry_msgs
+  nav_msgs
+  tf2
+  tf2_geometry_msgs
+  tf2_eigen
+)
+
 # ========== Localization Executable: localization_node ==========
 add_executable(localization_node
   src/localization/localization_node.cpp
@@ -219,6 +235,7 @@ target_link_libraries(localization_node
   open3d_registration
   open3d_conversions
   occupancy_grid_generator
+  localization_pose_utils
   ${Open3D_LIBRARIES}
   ${PCL_LIBRARIES}
 )
@@ -235,6 +252,7 @@ install(TARGETS
   open3d_registration
   open3d_conversions
   occupancy_grid_generator
+  localization_pose_utils
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
