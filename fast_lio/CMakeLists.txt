@@ -58,8 +58,6 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common io)
 find_package(OpenMP REQUIRED)
-find_package(PythonLibs REQUIRED)
-find_path(MATPLOTLIB_CPP_INCLUDE_DIRS "matplotlibcpp.h")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -102,7 +100,6 @@ include_directories(
   include/fast_lio/slam
   ${PCL_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
-  ${PYTHON_INCLUDE_DIRS}
   ${Open3D_INCLUDE_DIRS}
 )
 
@@ -169,11 +166,8 @@ target_include_directories(fastlio_mapping PUBLIC
 
 target_link_libraries(fastlio_mapping
   ${PCL_LIBRARIES}
-  ${PYTHON_LIBRARIES}
   Eigen3::Eigen
 )
-
-target_include_directories(fastlio_mapping PRIVATE ${PYTHON_INCLUDE_DIRS})
 
 # Link Pose6D message support
 list(APPEND EOL_LIST "foxy" "galactic" "eloquent" "dashing" "crystal")

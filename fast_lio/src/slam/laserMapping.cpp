@@ -41,7 +41,6 @@
 #include <csignal>
 #include <chrono>
 #include <unistd.h>
-#include <Python.h>
 #include <fast_lio/slam/so3_math.h>
 #include <rclcpp/rclcpp.hpp>
 #include <Eigen/Core>
