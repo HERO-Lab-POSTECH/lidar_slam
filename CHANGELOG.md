@@ -1,5 +1,24 @@
 # CHANGELOG - lidar_slam
 
+## [Unreleased] — Phase B-2b: TfPublisher 추출 (refactor)
+
+### Changed
+- `localization_node.cpp` 430줄 → 345줄 (-85, TF/map/occupancy_grid publishing 제거)
+- `localization_node.h`: `pub_map_`, `pub_occupancy_grid_`, `tf_broadcaster_`, `tf_timer_`, `og_*` 파라미터, 4개 publish 메서드 제거 → `std::unique_ptr<TfPublisher> tf_publisher_` 추가
+
+### Added
+- `fast_lio/include/fast_lio/localization/tf_publisher.h` — `fast_lio::localization::TfPublisher` 클래스 선언 (68줄)
+- `fast_lio/src/localization/tf_publisher.cpp` — TF/map/occupancy_grid publishing 구현 (125줄)
+
+### Notes
+- TfPublisher는 `mat_odom2map_`을 const ref로 공유 (소유는 `LocalizationNode`). `odom_mutex_`도 ref로 주입 → 엔진 코드(`localization_engine.cpp`) 무수정.
+- `tf_buffer_`/`tf_listener_`는 dead member (현재 어디서도 사용 안 함). 다음 dead-code phase에서 정리 예정.
+
+### Verification
+- colcon build PASS (22.1s)
+- baseline (post-B-2a, main `37903cd`) vs candidate (B-2b) 60s replay → 마지막 100 포인트 평균 위치 차 **11.82 cm**
+- B-2a에서 확립한 noise floor (median 4.7cm, p95 150cm) 내. baseline-vs-baseline 분포와 일관 → 회귀 없음.
+
 ## [Unreleased] — Phase B-2a: localization_engine split (refactor)
 
 ### Changed
