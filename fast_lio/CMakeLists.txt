@@ -231,6 +231,7 @@ ament_target_dependencies(localization_pose_utils
 add_executable(localization_node
   src/localization/localization_node.cpp
   src/localization/localization_engine.cpp
+  src/localization/tf_publisher.cpp
 )
 target_link_libraries(localization_node
   open3d_registration

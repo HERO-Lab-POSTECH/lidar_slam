@@ -26,9 +26,9 @@
 #include <tf2_eigen/tf2_eigen.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
-#include "fast_lio/localization/occupancy_grid_generator.hpp"
 #include "fast_lio/localization/open3d_conversions.h"
 #include "fast_lio/localization/pose_utils.h"
+#include "fast_lio/localization/tf_publisher.h"
 
 namespace pose_utils = fast_lio::localization::pose_utils;
 
@@ -125,10 +125,13 @@ LocalizationNode::LocalizationNode()
     this->get_parameter("save_scan_path", save_scan_path_);
 
     // OccupancyGrid parameters
-    this->get_parameter("occupancy_grid.publish", og_publish_);
-    this->get_parameter("occupancy_grid.resolution", og_resolution_);
-    this->get_parameter("occupancy_grid.z_min", og_z_min_);
-    this->get_parameter("occupancy_grid.z_max", og_z_max_);
+    fast_lio::localization::TfPublisherConfig tf_config;
+    tf_config.map_frame = map_frame_;
+    tf_config.odom_frame = odom_frame_;
+    this->get_parameter("occupancy_grid.publish", tf_config.occupancy_grid_publish);
+    this->get_parameter("occupancy_grid.resolution", tf_config.occupancy_grid_resolution);
+    this->get_parameter("occupancy_grid.z_min", tf_config.occupancy_grid_z_min);
+    this->get_parameter("occupancy_grid.z_max", tf_config.occupancy_grid_z_max);
 
     std::vector<double> initial_pose;
     this->get_parameter("initial_pose", initial_pose);
@@ -178,18 +181,6 @@ LocalizationNode::LocalizationNode()
     pub_odometry_ = this->create_publisher<nav_msgs::msg::Odometry>("/fast_lio/localization/odometry", 10);
     pub_confidence_ = this->create_publisher<std_msgs::msg::Float32>("/fast_lio/localization/confidence", 10);
 
-    // Use transient_local QoS for map so late subscribers receive it
-    rclcpp::QoS map_qos(1);
-    map_qos.transient_local();
-    pub_map_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/fast_lio/localization/map", map_qos);
-
-    // OccupancyGrid publisher (transient_local for late subscribers)
-    if (og_publish_)
-    {
-        pub_occupancy_grid_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
-            "/fast_lio/localization/occupancy_grid", map_qos);
-    }
-
     // Create subscribers
     sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>(
         "/fast_lio/odometry", 50,
@@ -203,25 +194,12 @@ LocalizationNode::LocalizationNode()
         "/initialpose", 10,
         std::bind(&LocalizationNode::initialPoseCallback, this, std::placeholders::_1));
 
-    // Create TF broadcaster
-    tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
-
-    // Publish map (once)
-    publishMap();
-
-    // Publish OccupancyGrid (once)
-    if (og_publish_)
-    {
-        publishOccupancyGrid();
-    }
-
-    // Create TF timer for consistent TF publishing (50Hz)
-    tf_timer_ = this->create_wall_timer(
-        std::chrono::milliseconds(20),
-        std::bind(&LocalizationNode::tfTimerCallback, this));
-
-    // Publish initial TF immediately
-    publishTF(this->now());
+    // TF / map / occupancy grid publisher
+    tf_publisher_ = std::make_unique<fast_lio::localization::TfPublisher>(
+        this, tf_config, mat_odom2map_, odom_mutex_);
+    tf_publisher_->publishMap(*pcd_map_ori_);
+    tf_publisher_->publishOccupancyGrid(*pcd_map_ori_);
+    tf_publisher_->start();
 
     // Start localization thread
     loc_thread_ = std::thread(&LocalizationNode::localizationLoop, this);
@@ -351,69 +329,6 @@ void LocalizationNode::initialPoseCallback(const geometry_msgs::msg::PoseWithCov
     mat_odom2map_ = mat_initialpose_;
     loc_initialized_ = false;  // Re-initialize localization
     RCLCPP_INFO(this->get_logger(), "Initial pose updated, re-initializing localization");
-}
-
-// ==================== TF / Map publishing ====================
-
-void LocalizationNode::publishMap()
-{
-    sensor_msgs::msg::PointCloud2 map_msg;
-    auto map_coarse = pcd_map_ori_->VoxelDownSample(0.5);  // Coarse for visualization
-    open3d_conversions::open3dToRos(*map_coarse, map_msg, map_frame_);
-    map_msg.header.stamp = this->now();
-    pub_map_->publish(map_msg);
-}
-
-void LocalizationNode::publishOccupancyGrid()
-{
-    RCLCPP_INFO(this->get_logger(), "Generating OccupancyGrid from map (z: [%.2f, %.2f], res: %.3f)...",
-                og_z_min_, og_z_max_, og_resolution_);
-
-    occupancy_grid::OccupancyGridParams og_params;
-    og_params.resolution = og_resolution_;
-    og_params.z_min = og_z_min_;
-    og_params.z_max = og_z_max_;
-    og_params.frame_id = map_frame_;
-
-    occupancy_grid::OccupancyGridGenerator generator(og_params);
-    auto grid = generator.generate(*pcd_map_ori_, this->now());
-
-    if (grid)
-    {
-        RCLCPP_INFO(this->get_logger(), "OccupancyGrid generated: %u x %u cells (%.1f x %.1f m)",
-                    grid->info.width, grid->info.height,
-                    grid->info.width * og_resolution_,
-                    grid->info.height * og_resolution_);
-        pub_occupancy_grid_->publish(std::move(*grid));
-    }
-    else
-    {
-        RCLCPP_WARN(this->get_logger(), "Failed to generate OccupancyGrid (no points in Z range?)");
-    }
-}
-
-void LocalizationNode::tfTimerCallback()
-{
-    publishTF(this->now());
-}
-
-void LocalizationNode::publishTF(const rclcpp::Time& stamp)
-{
-    std::lock_guard<std::mutex> lock(odom_mutex_);
-
-    geometry_msgs::msg::TransformStamped tf_msg;
-    tf_msg.header.stamp = stamp;
-    tf_msg.header.frame_id = map_frame_;
-    tf_msg.child_frame_id = odom_frame_;
-    tf_msg.transform.translation.x = mat_odom2map_(0, 3);
-    tf_msg.transform.translation.y = mat_odom2map_(1, 3);
-    tf_msg.transform.translation.z = mat_odom2map_(2, 3);
-    Eigen::Quaterniond q(mat_odom2map_.block<3, 3>(0, 0));
-    tf_msg.transform.rotation.x = q.x();
-    tf_msg.transform.rotation.y = q.y();
-    tf_msg.transform.rotation.z = q.z();
-    tf_msg.transform.rotation.w = q.w();
-    tf_broadcaster_->sendTransform(tf_msg);
 }
 
 // ==================== main ====================
