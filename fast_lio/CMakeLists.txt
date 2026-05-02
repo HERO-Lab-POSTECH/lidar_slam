@@ -230,6 +230,7 @@ ament_target_dependencies(localization_pose_utils
 # ========== Localization Executable: localization_node ==========
 add_executable(localization_node
   src/localization/localization_node.cpp
+  src/localization/localization_engine.cpp
 )
 target_link_libraries(localization_node
   open3d_registration
