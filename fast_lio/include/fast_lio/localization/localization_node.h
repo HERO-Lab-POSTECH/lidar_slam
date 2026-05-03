@@ -19,9 +19,6 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <std_msgs/msg/float32.hpp>
-#include <tf2_ros/buffer.h>
-#include <tf2_ros/transform_listener.h>
-
 #include "fast_lio/localization/kalman_filter.h"
 #include "fast_lio/localization/tf_publisher.h"
 
@@ -76,10 +73,6 @@ private:
     void initialPoseCallback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
 
     // ===== Members =====
-    // TF (lookup buffer kept for future use; broadcasting handled by tf_publisher_)
-    tf2_ros::Buffer tf_buffer_;
-    std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
-
     // TF / map / occupancy grid publishing
     std::unique_ptr<fast_lio::localization::TfPublisher> tf_publisher_;
 

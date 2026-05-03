@@ -1,5 +1,23 @@
 # CHANGELOG - lidar_slam
 
+## [Unreleased] — Phase A-3: 누적 dead code 정리 (refactor)
+
+### Removed
+- `laserMapping.cpp`: `map_file_path` 파라미터 (declare/get/global) — C-1 후 어디에서도 사용 안 됨. C-1 노트에서 "추후 phase에서 정리" 예고됨.
+- `laserMapping.cpp`: `string root_dir = ROOT_DIR;` global — 선언만 있고 사용 처 없음 (`resolve_save_path` 등은 `string(ROOT_DIR)` 직접 사용).
+- `mid360.yaml`: `map_file_path: "./test.pcd"` 라인 — 파라미터 제거에 동기화.
+- `localization_node.h`: `tf2_ros::Buffer tf_buffer_`, `std::shared_ptr<tf2_ros::TransformListener> tf_listener_` 멤버 — B-2b 노트에서 dead로 식별됨. 선언과 ctor init만 있고 어디서도 lookup 안 함.
+- `localization_node.h`: `<tf2_ros/buffer.h>`, `<tf2_ros/transform_listener.h>` includes — 위 멤버 제거에 동기화.
+- `localization_node.cpp`: ctor의 `tf_buffer_(this->get_clock()), tf_listener_(...)` init list 항목 제거.
+
+### Notes
+- 알고리즘 영향 0% — 전부 single-write/no-read globals 또는 선언만 있는 멤버. Phase A 회귀 의무 없음.
+- `tf_publisher_`는 그대로 유지 (TF broadcasting 정상 사용 중).
+
+### Verification
+- colcon build PASS (55.0s)
+- 변경 stat: 4 files changed, 2 insertions(+), 15 deletions(-)
+
 ## [Unreleased] — Phase C-2: path.poses ring buffer (refactor)
 
 ### Changed

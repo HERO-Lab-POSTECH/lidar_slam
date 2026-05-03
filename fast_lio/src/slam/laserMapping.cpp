@@ -74,8 +74,7 @@ double time_diff_lidar_to_imu = 0.0;
 mutex mtx_buffer;
 condition_variable sig_buffer;
 
-string root_dir = ROOT_DIR;
-string map_file_path, lid_topic, imu_topic;
+string lid_topic, imu_topic;
 string odom_frame = "camera_init", body_frame = "body";
 
 double res_mean_last = 0.05, total_residual = 0.0;
@@ -854,7 +853,6 @@ public:
         this->declare_parameter<bool>("publish.dense_publish_en", true);
         this->declare_parameter<bool>("publish.scan_bodyframe_pub_en", true);
         this->declare_parameter<int>("max_iteration", 4);
-        this->declare_parameter<string>("map_file_path", "");
         this->declare_parameter<string>("common.lid_topic", "/sensor/lidar/livox_mid360/points");
         this->declare_parameter<string>("common.imu_topic", "/sensor/ins/livox_mid360/imu");
         this->declare_parameter<bool>("common.time_sync_en", false);
@@ -896,7 +894,6 @@ public:
         this->get_parameter_or<bool>("publish.dense_publish_en", dense_pub_en, true);
         this->get_parameter_or<bool>("publish.scan_bodyframe_pub_en", scan_body_pub_en, true);
         this->get_parameter_or<int>("max_iteration", NUM_MAX_ITERATIONS, 4);
-        this->get_parameter_or<string>("map_file_path", map_file_path, "");
         this->get_parameter_or<string>("common.lid_topic", lid_topic, "/sensor/lidar/livox_mid360/points");
         this->get_parameter_or<string>("common.imu_topic", imu_topic,"/sensor/ins/livox_mid360/imu");
         this->get_parameter_or<bool>("common.time_sync_en", time_sync_en, false);
