@@ -1,5 +1,23 @@
 # CHANGELOG - lidar_slam
 
+## [Unreleased] — fix: localization.rviz topic names (bug fix)
+
+### Changed
+- `fast_lio/rviz/localization.rviz`: 3개 topic 이름을 실제 publisher와 일치시킴.
+  - `/localization/map` → `/fast_lio/localization/map` (Map PointCloud2)
+  - `/localization/occupancy_grid` → `/fast_lio/localization/occupancy_grid` (OccupancyGrid)
+  - `/localization/body2map` → `/fast_lio/localization/odometry` (Localized Pose)
+
+### Notes
+- 원인: TfPublisher와 LocalizationNode는 모두 `/fast_lio/localization/...` 접두로 publish하지만 RViz config는 접두 없는 이름으로 subscribe → publisher 0건 → map cloud / occupancy grid / localized pose 모두 RViz에 안 보임.
+- `body2map`는 정확한 publisher가 코드에 없음 (ghost topic) → 가장 의미 가까운 `/fast_lio/localization/odometry`로 매핑. Localized Pose display의 빨간 axes가 정상 표시됨.
+- `/fast_lio/cloud_registered_body` (CurrentScan, 초록)은 mapping 노드가 publish하므로 변경 불필요.
+
+### Verification
+- KIRO `20260122_134357` bag으로 mapping → `kiro_demo_map.pcd` (1.27M pts, 57×38×24m) 생성
+- 같은 bag으로 localization replay → Init ICP fitness **0.994** ("INITIALIZATION: EXCELLENT"), RViz에 map (무지개색 AxisColor) + scan (초록색 FlatColor) + OccupancyGrid + Localized Pose (빨간 axes) 모두 정상 시각화
+- `map → odom → base_link` TF 트리 정상 (단, 이를 위해 mapping yaml의 `tf.odom_frame`을 localization launch 사용 시 `"map"` → `"odom"`로 override해야 함; PR 범위 외, 향후 `localization.launch.py`에서 자동 처리 검토 필요)
+
 ## [Unreleased] — Phase C-3: PCD part files cleanup after consolidate (refactor)
 
 ### Changed
