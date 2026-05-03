@@ -1,5 +1,24 @@
 # CHANGELOG - lidar_slam
 
+## [Unreleased] — Phase C-3: PCD part files cleanup after consolidate (refactor)
+
+### Changed
+- `laserMapping.cpp` `consolidate_pcd_parts()`: 성공적으로 final PCD를 쓴 후 `pcd_save_cleanup_parts_after_consolidate=true`이면 `pcd_save_part_paths`의 모든 part 파일을 `std::filesystem::remove`로 삭제하고, `pcd_save_part_counter`/`pcd_save_part_paths`/`pcl_wait_save`를 리셋합니다. 같은 세션의 후속 flush가 `part000`부터 다시 쌓이도록 보장.
+- `mid360.yaml` `pcd_save:` 블록에 `cleanup_parts_after_consolidate: true` 추가.
+
+### Added
+- `laserMapping.cpp`: `bool pcd_save_cleanup_parts_after_consolidate = true;` global + declare/get_parameter.
+
+### Notes
+- **Disk fill-up 방지**: 기본 `interval=6000` (10분 @ 10Hz) → 24시간 운용 시 144 part files (~3 GB). 한 달 = ~90 GB. consolidate 후 자동 삭제되도록 변경. Localization 핸드오프 산출물은 `scans.pcd` 단일 파일.
+- Part 파일 보존이 필요한 디버깅 케이스에서는 `cleanup_parts_after_consolidate: false`로 끌 수 있음.
+- consolidate 호출 경로 두 곳(`map_save` 서비스, `main()` shutdown) 모두 동일 함수 사용 → 어느 경로든 정리됨.
+
+### Verification
+- colcon build PASS (56.3s)
+- Regression: 30s bag replay (interval=150 frames) → t=30s 시점 part000 존재 → `ros2 service call /map_save` → log: `Consolidated 1 part(s) + buffer -> 444420 pts at /tmp/c3_test/scans.pcd` + `Cleaned up 1/1 part file(s) after consolidate.` → 디렉토리에 `scans.pcd`만 + 새 `scans_part000.pcd` (counter 리셋 검증)
+- 추가 30s bag → 3 parts 누적 → SIGINT shutdown → `Consolidated 3 part(s) + buffer -> 720786 pts` + `Cleaned up 3/3 part file(s)` → 최종 `scans.pcd` 단일 파일 (23 MB)
+
 ## [Unreleased] — Phase A-3: 누적 dead code 정리 (refactor)
 
 ### Removed

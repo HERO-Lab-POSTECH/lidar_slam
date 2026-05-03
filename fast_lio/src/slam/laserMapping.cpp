@@ -444,10 +444,12 @@ PointCloudXYZI::Ptr pcl_wait_save(new PointCloudXYZI());
    to <save_path>_partNNN.pcd, then cleared. On shutdown / map_save service, all parts
    are merged into a single consolidated PCD. */
 std::mutex pcl_wait_save_mutex;
-int  pcd_save_interval               = 6000;   // -1 disables flush (RAM-only)
-bool pcd_save_consolidate_on_shutdown = true;
-int  pcd_save_frame_counter          = 0;
-int  pcd_save_part_counter           = 0;
+int  pcd_save_interval                       = 6000;   // -1 disables flush (RAM-only)
+bool pcd_save_consolidate_on_shutdown        = true;
+bool pcd_save_cleanup_parts_after_consolidate = true;  // delete <save_path>_partNNN.pcd after a
+                                                        // successful consolidate; false keeps them.
+int  pcd_save_frame_counter                  = 0;
+int  pcd_save_part_counter                   = 0;
 std::vector<std::string> pcd_save_part_paths;
 
 static std::string resolve_save_path()
@@ -534,8 +536,29 @@ static bool consolidate_pcd_parts(const std::string& final_path)
     std::filesystem::create_directories(std::filesystem::path(final_path).parent_path());
     pcl::PCDWriter w;
     w.writeBinary(final_path, *to_save);
-    std::cout << "[FAST-LIO] Consolidated " << pcd_save_part_paths.size()
+    const size_t parts_count = pcd_save_part_paths.size();
+    std::cout << "[FAST-LIO] Consolidated " << parts_count
               << " part(s) + buffer -> " << to_save->size() << " pts at " << final_path << std::endl;
+
+    if (pcd_save_cleanup_parts_after_consolidate && !pcd_save_part_paths.empty()) {
+        size_t removed = 0;
+        for (const auto& part : pcd_save_part_paths) {
+            std::error_code ec;
+            if (std::filesystem::remove(part, ec)) {
+                ++removed;
+            } else if (ec) {
+                std::cerr << "[FAST-LIO] Failed to delete part " << part << ": " << ec.message() << std::endl;
+            }
+        }
+        std::cout << "[FAST-LIO] Cleaned up " << removed << "/" << parts_count
+                  << " part file(s) after consolidate." << std::endl;
+        pcd_save_part_paths.clear();
+        pcd_save_part_counter = 0;
+        {
+            std::lock_guard<std::mutex> lk(pcl_wait_save_mutex);
+            pcl_wait_save->clear();
+        }
+    }
     return true;
 }
 
@@ -880,6 +903,7 @@ public:
         this->declare_parameter<double>("pcd_save.filter_size", 0.1);
         this->declare_parameter<int>("pcd_save.interval", 6000);
         this->declare_parameter<bool>("pcd_save.consolidate_on_shutdown", true);
+        this->declare_parameter<bool>("pcd_save.cleanup_parts_after_consolidate", true);
         this->declare_parameter<vector<double>>("mapping.extrinsic_T", vector<double>());
         this->declare_parameter<vector<double>>("mapping.extrinsic_R", vector<double>());
         this->declare_parameter<string>("tf.odom_frame", "camera_init");
@@ -921,6 +945,7 @@ public:
         this->get_parameter_or<double>("pcd_save.filter_size", filter_size_save_min, 0.1);
         this->get_parameter_or<int>("pcd_save.interval", pcd_save_interval, 6000);
         this->get_parameter_or<bool>("pcd_save.consolidate_on_shutdown", pcd_save_consolidate_on_shutdown, true);
+        this->get_parameter_or<bool>("pcd_save.cleanup_parts_after_consolidate", pcd_save_cleanup_parts_after_consolidate, true);
         this->get_parameter_or<vector<double>>("mapping.extrinsic_T", extrinT, vector<double>());
         this->get_parameter_or<vector<double>>("mapping.extrinsic_R", extrinR, vector<double>());
         this->get_parameter_or<string>("tf.odom_frame", odom_frame, "camera_init");

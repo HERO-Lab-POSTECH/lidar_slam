@@ -55,3 +55,6 @@
             interval: 6000               # Frames per part flush (10 min @ 10Hz). RAM cap = interval × ~160KB ≈ 960MB.
                                          # -1 disables flush (RAM-only, original behavior — risk of OOM on long runs).
             consolidate_on_shutdown: true # On shutdown, merge all <save_path>_partNNN.pcd into single <save_path>.
+            cleanup_parts_after_consolidate: true # After successful consolidate, delete the per-part PCD files.
+                                                  # Prevents disk fill-up on always-on runs (~3 GB/day at default interval).
+                                                  # Set false to keep parts for debugging.
