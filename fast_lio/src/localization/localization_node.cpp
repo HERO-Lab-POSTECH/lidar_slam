@@ -33,9 +33,7 @@
 namespace pose_utils = fast_lio::localization::pose_utils;
 
 LocalizationNode::LocalizationNode()
-    : Node("localization_node"),
-      tf_buffer_(this->get_clock()),
-      tf_listener_(std::make_shared<tf2_ros::TransformListener>(tf_buffer_))
+    : Node("localization_node")
 {
     // Initialize matrices
     mat_body2odom_ = Eigen::Matrix4d::Identity();
