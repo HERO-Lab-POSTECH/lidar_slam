@@ -1,5 +1,35 @@
 # CHANGELOG - lidar_slam
 
+## [Unreleased] — Phase C-2: path.poses ring buffer (refactor)
+
+### Changed
+- `fast_lio/src/slam/laserMapping.cpp` `publish_path()` — `path.poses.push_back` 후 `path_max_poses` 초과 시 oldest pose erase. 매 publish 시 메시지 크기 bounded.
+- `fast_lio/config/slam/mid360.yaml` `publish:` 블록에 `path_max_poses: 3600` 추가.
+
+### Added
+- `int path_max_poses = 3600` global (default 1시간 @ 1 Hz publish — `publish_path`는 LiDAR 10Hz 콜백 중 매 10번째에 publish → 1 Hz)
+- `publish.path_max_poses` ROS2 파라미터 (declare/get) — `0` 또는 음수면 cap 비활성 (기존 unbounded 동작 유지, backward compat)
+- `fast_lio/scripts/regression_test_path_buffer.sh` — 3-mode 회귀 (baseline / candidate / candidate-cap)
+
+### Notes
+- 기존 동작: 코드 코멘트가 *"if path is too large, the rvis will crash"*로 인정만 하고 cap은 없었음. 12h 운용 시 ~43,200 poses (≈ 3 MB 메시지) 매 1초 → 24 Mbps 네트워크 + viz client RAM 누적.
+- `path_max_poses: 3600` 기본값 효과: 메시지 크기 ≤ ~263 KB, 매 publish ≤ 2 Mbps, viz client는 1시간 윈도우 표시.
+- 시각화 외 trajectory 분석은 `/fast_lio/odometry` (이미 publish됨, stateless) 또는 별도 PCD 누적 사용.
+- `path.poses.erase(begin())`는 O(N)이지만 N≤3600이라 µs 수준. `std::deque`로 대체할 정도는 아님 (PoseStamped 복사 비용 미미).
+
+### Verification
+- colcon build PASS (54.7s)
+- 60s bag replay (UCRC watertank) — 3-mode 비교:
+
+  | 모드 | path_msgs | last_path_poses | 검증 |
+  |---|---:|---:|---|
+  | baseline (main `3e85d39`, unbounded) | 69 | 69 | 모든 pose 누적 |
+  | candidate (path_max_poses=3600) | 68 | 68 | limit 미도달, baseline 동등 (±1 timing 노이즈) |
+  | candidate-cap (path_max_poses=5) | 68 | **5** | ring buffer cap 정상 동작 |
+
+  - publish 횟수는 timing 노이즈로 ±1 변동, last poses 수는 cap이 강제 적용됨을 확인
+  - SLAM 알고리즘·odometry 무영향 (회귀 의무 약함 — `publish_path` 단일 함수만 수정)
+
 ## [Unreleased] — Phase C-1: pcd_save interval flush + consolidate (refactor)
 
 ### Changed
