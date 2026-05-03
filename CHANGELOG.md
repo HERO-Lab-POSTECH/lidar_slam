@@ -1,5 +1,55 @@
 # CHANGELOG - lidar_slam
 
+## [Unreleased] — Phase C-1: pcd_save interval flush + consolidate (refactor)
+
+### Changed
+- `fast_lio/src/slam/laserMapping.cpp` 1,097줄 → 1,163줄 (+66, helper 함수 + globals)
+- `publish_frame_world`: `pcl_wait_save` 누적부에 mutex 추가 + `pcd_save_interval` frame마다 part PCD flush + buffer clear
+- `save_to_pcd()` (map_save 서비스): 이전엔 `pcl_wait_pub` (publish_map 미호출 → 항상 빈 PCD) 저장 → 이제 `consolidate_pcd_parts(resolve_save_path())` 호출 (모든 part + buffer 합치기). **빈 PCD 버그 수정**.
+- `main()` shutdown 처리: 단일 inline voxel-write → `consolidate_pcd_parts(resolve_save_path())` 단일 경로
+- `fast_lio/config/slam/mid360.yaml`: `pcd_save.interval`, `pcd_save.consolidate_on_shutdown` 재도입
+
+### Added
+- `fast_lio/src/slam/laserMapping.cpp` helper 함수 4종:
+  - `resolve_save_path()` — yaml `save_path` 또는 `ROOT_DIR/PCD/scans.pcd` (확장자 보정)
+  - `compute_part_path(base, idx)` — `<save_path>_partNNN.pcd`
+  - `flush_pcd_part_unlocked()` — voxel-down → write part → buffer clear (caller holds mutex)
+  - `consolidate_pcd_parts(final_path)` — 모든 part PCD load + 현재 buffer + voxel-down → final write
+- `pcd_save_interval` (default 6000 frames = 10 min @ 10 Hz)
+- `pcd_save_consolidate_on_shutdown` (default true)
+- `pcd_save_part_paths` global vector — flush된 part 파일 경로 추적
+- `pcl_wait_save_mutex` — `pcl_wait_save` race 보호
+- `fast_lio/scripts/regression_test_pcd_save.sh` — 3-mode 회귀 (baseline / candidate-default / candidate-flush)
+
+### Notes
+- **운용 패턴**: 사용자는 fast_lio를 항시 ON 상태로 두고 sonar 3D recon + bag만 껐다 켜는 패턴 사용. fast_lio buffer가 무한 누적되면 12h × 1.6 MB/s ≈ 70 GB → OOM. interval flush로 RAM cap = `interval × ~160 KB ≈ 960 MB` (default).
+- **`map_save` 서비스 동작 변경**: 이전엔 `pcl_wait_pub` (publish_map 미호출로 항상 빈 PCD) 저장 → 이제 정상적으로 모든 누적 점을 통합 저장. 호출 시점까지의 모든 part + 현재 buffer가 단일 PCD로 통합됨.
+- **`map_file_path` 파라미터는 여전히 declare/get하지만 더 이상 PCD 저장 경로로 사용되지 않음** (yaml `pcd_save.save_path` 또는 launch arg `save_map_path`로 통합). 추후 phase에서 정리.
+- `pcd_save.interval: -1` 설정 시 기존 RAM-only 동작 (장기 운용 시 OOM 위험).
+- Phase C-2(`path.poses` ring buffer)는 별도 PR.
+
+### Verification
+- colcon build PASS (54.7s)
+- 60s bag replay (UCRC watertank) — 3-mode 비교:
+
+  | 모드 | final_pts | RSS peak |
+  |---|---:|---:|
+  | baseline (main `e5e50a6`, RAM-only) | 673,503 | **331 MB** |
+  | candidate-default (interval=6000, flush 0회) | 677,246 | 332 MB |
+  | candidate-flush (interval=300, flush 2회) | 675,639 | **239 MB (−28%)** |
+
+  - **점 개수 차 0.3–0.6%** (voxel grid 두-pass 노이즈 수준)
+  - **flush 모드에서 RAM peak 28% 감소** — 중간 flush로 `pcl_wait_save` 비워짐
+  - candidate-flush의 part 파일: `scans_part000.pcd` 420,160 pts + `scans_part001.pcd` 443,067 pts → consolidate 후 675,639 pts (정상 동작)
+
+- 추가 시나리오 검증 (3종):
+
+  | 모드 | 결과 | 검증 항목 |
+  |---|---|---|
+  | `service-call` (interval=300, t=30s에 `ros2 service call /map_save`) | response `success=True, 'Map saved to ...'`; 호출 직후 PCD = **423,951 pts** | **빈 PCD 버그 fix 확인** (이전엔 `pcl_wait_pub` 0 pts 저장) |
+  | `ram-only` (`interval: -1`) | final 677,211 pts, parts 0개, RSS 340 MB | flush disabled 분기 정상 (기존 RAM-only 동작 유지) |
+  | `no-consolidate` (`consolidate_on_shutdown: false`) | final 미생성, parts 2개 (421k+445k) 디스크 잔존, log: `2 part(s) left on disk, 407606 buffered points discarded` | shutdown skip 분기 정상 |
+
 ## [Unreleased] — Phase A-2: laserMapping.cpp dead code 제거 (refactor)
 
 ### Changed

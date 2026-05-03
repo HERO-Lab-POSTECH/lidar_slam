@@ -437,6 +437,107 @@ void map_incremental()
 
 PointCloudXYZI::Ptr pcl_wait_pub(new PointCloudXYZI());
 PointCloudXYZI::Ptr pcl_wait_save(new PointCloudXYZI());
+
+/* Interval-based PCD flush state — bounds RAM during long runs.
+   pcl_wait_save accumulates raw points and is flushed every `pcd_save_interval` frames
+   to <save_path>_partNNN.pcd, then cleared. On shutdown / map_save service, all parts
+   are merged into a single consolidated PCD. */
+std::mutex pcl_wait_save_mutex;
+int  pcd_save_interval               = 6000;   // -1 disables flush (RAM-only)
+bool pcd_save_consolidate_on_shutdown = true;
+int  pcd_save_frame_counter          = 0;
+int  pcd_save_part_counter           = 0;
+std::vector<std::string> pcd_save_part_paths;
+
+static std::string resolve_save_path()
+{
+    std::string p = pcd_save_path.empty() ? (string(ROOT_DIR) + "PCD/scans.pcd") : pcd_save_path;
+    if (p.size() < 4 || p.substr(p.size() - 4) != ".pcd") p += ".pcd";
+    return p;
+}
+
+static std::string compute_part_path(const std::string& base_path, int part_idx)
+{
+    namespace fs = std::filesystem;
+    fs::path p(base_path);
+    char suffix[16];
+    snprintf(suffix, sizeof(suffix), "_part%03d", part_idx);
+    return (p.parent_path() / (p.stem().string() + suffix + ".pcd")).string();
+}
+
+/* Caller MUST hold pcl_wait_save_mutex. Voxel-downs pcl_wait_save, writes part PCD,
+   clears the in-memory buffer. */
+static void flush_pcd_part_unlocked()
+{
+    if (pcl_wait_save->empty()) return;
+
+    const std::string base = resolve_save_path();
+    std::filesystem::create_directories(std::filesystem::path(base).parent_path());
+    const std::string part_path = compute_part_path(base, pcd_save_part_counter);
+
+    PointCloudXYZI::Ptr to_save = pcl_wait_save;
+    if (filter_size_save_min > 0.01) {
+        pcl::VoxelGrid<PointType> vg;
+        vg.setLeafSize(filter_size_save_min, filter_size_save_min, filter_size_save_min);
+        vg.setInputCloud(pcl_wait_save);
+        PointCloudXYZI::Ptr filtered(new PointCloudXYZI());
+        vg.filter(*filtered);
+        to_save = filtered;
+    }
+
+    pcl::PCDWriter w;
+    w.writeBinary(part_path, *to_save);
+    pcd_save_part_paths.push_back(part_path);
+    std::cout << "[FAST-LIO] Flushed part " << pcd_save_part_counter
+              << " (" << to_save->size() << " pts) -> " << part_path << std::endl;
+
+    pcl_wait_save->clear();
+    pcd_save_part_counter++;
+}
+
+/* Loads all flushed parts + remaining in-memory buffer, voxel-downs once, writes final_path.
+   Returns true if any points were written. Acquires pcl_wait_save_mutex internally. */
+static bool consolidate_pcd_parts(const std::string& final_path)
+{
+    PointCloudXYZI::Ptr final_cloud(new PointCloudXYZI());
+
+    for (const auto& part : pcd_save_part_paths) {
+        PointCloudXYZI part_cloud;
+        if (pcl::io::loadPCDFile<PointType>(part, part_cloud) == 0) {
+            *final_cloud += part_cloud;
+        } else {
+            std::cerr << "[FAST-LIO] Failed to load part: " << part << std::endl;
+        }
+    }
+
+    {
+        std::lock_guard<std::mutex> lk(pcl_wait_save_mutex);
+        *final_cloud += *pcl_wait_save;
+    }
+
+    if (final_cloud->empty()) {
+        std::cout << "[FAST-LIO] No points to consolidate." << std::endl;
+        return false;
+    }
+
+    PointCloudXYZI::Ptr to_save = final_cloud;
+    if (filter_size_save_min > 0.01) {
+        pcl::VoxelGrid<PointType> vg;
+        vg.setLeafSize(filter_size_save_min, filter_size_save_min, filter_size_save_min);
+        vg.setInputCloud(final_cloud);
+        PointCloudXYZI::Ptr filtered(new PointCloudXYZI());
+        vg.filter(*filtered);
+        to_save = filtered;
+    }
+
+    std::filesystem::create_directories(std::filesystem::path(final_path).parent_path());
+    pcl::PCDWriter w;
+    w.writeBinary(final_path, *to_save);
+    std::cout << "[FAST-LIO] Consolidated " << pcd_save_part_paths.size()
+              << " part(s) + buffer -> " << to_save->size() << " pts at " << final_path << std::endl;
+    return true;
+}
+
 void publish_frame_world(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pubLaserCloudFull)
 {
     if(scan_pub_en)
@@ -462,10 +563,9 @@ void publish_frame_world(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::Share
     }
 
     /**************** save map ****************/
-    /* Accumulate dense point cloud for saving on shutdown */
+    /* Accumulate dense points; flush to disk every pcd_save_interval frames to bound RAM. */
     if (pcd_save_en)
     {
-        // Use dense (feats_undistort) for maximum density
         int size = feats_undistort->points.size();
         PointCloudXYZI::Ptr laserCloudWorld(new PointCloudXYZI(size, 1));
 
@@ -474,7 +574,14 @@ void publish_frame_world(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::Share
             RGBpointBodyToWorld(&feats_undistort->points[i],
                                 &laserCloudWorld->points[i]);
         }
+
+        std::lock_guard<std::mutex> lk(pcl_wait_save_mutex);
         *pcl_wait_save += *laserCloudWorld;
+        pcd_save_frame_counter++;
+        if (pcd_save_interval > 0 && pcd_save_frame_counter >= pcd_save_interval) {
+            flush_pcd_part_unlocked();
+            pcd_save_frame_counter = 0;
+        }
     }
 }
 
@@ -541,20 +648,12 @@ void publish_map(rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pub
     // pubLaserCloudMap->publish(laserCloudMap);
 }
 
-void save_to_pcd()
+/* Save consolidated map (parts + buffer) to the unified resolve_save_path().
+   Note: previously wrote pcl_wait_pub which was always empty since publish_map() is
+   not called — produced silent empty PCDs. Now uses the same path as shutdown auto-save. */
+bool save_to_pcd()
 {
-    // Auto-append .pcd extension if missing
-    std::string save_path = map_file_path;
-    if (save_path.size() < 4 || save_path.substr(save_path.size() - 4) != ".pcd") {
-        save_path += ".pcd";
-    }
-
-    // Auto-create parent directories if not exist
-    std::filesystem::path file_path(save_path);
-    std::filesystem::create_directories(file_path.parent_path());
-
-    pcl::PCDWriter pcd_writer;
-    pcd_writer.writeBinary(save_path, *pcl_wait_pub);
+    return consolidate_pcd_parts(resolve_save_path());
 }
 
 template<typename T>
@@ -772,6 +871,8 @@ public:
         this->declare_parameter<bool>("pcd_save.pcd_save_en", false);
         this->declare_parameter<string>("pcd_save.save_path", "");
         this->declare_parameter<double>("pcd_save.filter_size", 0.1);
+        this->declare_parameter<int>("pcd_save.interval", 6000);
+        this->declare_parameter<bool>("pcd_save.consolidate_on_shutdown", true);
         this->declare_parameter<vector<double>>("mapping.extrinsic_T", vector<double>());
         this->declare_parameter<vector<double>>("mapping.extrinsic_R", vector<double>());
         this->declare_parameter<string>("tf.odom_frame", "camera_init");
@@ -811,6 +912,8 @@ public:
         this->get_parameter_or<bool>("pcd_save.pcd_save_en", pcd_save_en, false);
         this->get_parameter_or<string>("pcd_save.save_path", pcd_save_path, "");
         this->get_parameter_or<double>("pcd_save.filter_size", filter_size_save_min, 0.1);
+        this->get_parameter_or<int>("pcd_save.interval", pcd_save_interval, 6000);
+        this->get_parameter_or<bool>("pcd_save.consolidate_on_shutdown", pcd_save_consolidate_on_shutdown, true);
         this->get_parameter_or<vector<double>>("mapping.extrinsic_T", extrinT, vector<double>());
         this->get_parameter_or<vector<double>>("mapping.extrinsic_R", extrinR, vector<double>());
         this->get_parameter_or<string>("tf.odom_frame", odom_frame, "camera_init");
@@ -1002,18 +1105,17 @@ private:
 
     void map_save_callback(std_srvs::srv::Trigger::Request::ConstSharedPtr req, std_srvs::srv::Trigger::Response::SharedPtr res)
     {
-        RCLCPP_INFO(this->get_logger(), "Saving map to %s...", map_file_path.c_str());
-        if (pcd_save_en)
-        {
-            save_to_pcd();
-            res->success = true;
-            res->message = "Map saved.";
-        }
-        else
-        {
+        (void)req;
+        if (!pcd_save_en) {
             res->success = false;
-            res->message = "Map save disabled.";
+            res->message = "Map save disabled (pcd_save.pcd_save_en=false).";
+            return;
         }
+        const std::string final_path = resolve_save_path();
+        RCLCPP_INFO(this->get_logger(), "Consolidating map to %s ...", final_path.c_str());
+        const bool ok = save_to_pcd();
+        res->success = ok;
+        res->message = ok ? ("Map saved to " + final_path) : "No points accumulated yet.";
     }
 
 private:
@@ -1043,53 +1145,17 @@ int main(int argc, char** argv)
     auto node = std::make_shared<LaserMappingNode>();
     rclcpp::spin(node);
 
-    std::cout << "\n[FAST-LIO] Shutting down, saving map..." << std::endl;
+    std::cout << "\n[FAST-LIO] Shutting down..." << std::endl;
     rclcpp::shutdown();
-    /**************** save map ****************/
-    /* Save accumulated dense point cloud (reference style) */
+
     if (pcd_save_en || !pcd_save_path.empty())
     {
-        string all_points_dir;
-        if (!pcd_save_path.empty()) {
-            all_points_dir = pcd_save_path;
-            // Auto-append .pcd extension if missing
-            if (all_points_dir.size() < 4 || all_points_dir.substr(all_points_dir.size() - 4) != ".pcd") {
-                all_points_dir += ".pcd";
-            }
+        if (pcd_save_consolidate_on_shutdown) {
+            consolidate_pcd_parts(resolve_save_path());
         } else {
-            all_points_dir = string(ROOT_DIR) + "PCD/scans.pcd";
-        }
-
-        // Auto-create parent directories if not exist
-        std::filesystem::path file_path(all_points_dir);
-        std::filesystem::create_directories(file_path.parent_path());
-
-        if (pcl_wait_save->size() > 0)
-        {
-            cout << "[FAST-LIO] Accumulated " << pcl_wait_save->size() << " raw points" << endl;
-
-            PointCloudXYZI::Ptr map_to_save = pcl_wait_save;
-
-            // Optional: Apply voxel filter to reduce file size while keeping density
-            if (filter_size_save_min > 0.01)
-            {
-                pcl::VoxelGrid<PointType> voxel_filter;
-                voxel_filter.setLeafSize(filter_size_save_min, filter_size_save_min, filter_size_save_min);
-                voxel_filter.setInputCloud(pcl_wait_save);
-                PointCloudXYZI::Ptr map_filtered(new PointCloudXYZI());
-                voxel_filter.filter(*map_filtered);
-                cout << "[FAST-LIO] Filtered to " << map_filtered->size() << " points (voxel=" << filter_size_save_min << "m)" << endl;
-                map_to_save = map_filtered;
-            }
-
-            pcl::PCDWriter pcd_writer;
-            cout << "[FAST-LIO] Saving map (" << map_to_save->size() << " points) to: " << all_points_dir << endl;
-            pcd_writer.writeBinary(all_points_dir, *map_to_save);
-            cout << "[FAST-LIO] Map saved successfully!" << endl;
-        }
-        else
-        {
-            cout << "[FAST-LIO] Warning: No map points accumulated." << endl;
+            std::cout << "[FAST-LIO] consolidate_on_shutdown=false; "
+                      << pcd_save_part_paths.size() << " part(s) left on disk, "
+                      << pcl_wait_save->size() << " buffered points discarded." << std::endl;
         }
     }
 
