@@ -62,6 +62,8 @@
 #define PUBFRAME_PERIOD     (20)
 
 bool   pcd_save_en = false, time_sync_en = false, extrinsic_est_en = true, path_en = true;
+int    path_max_poses = 3600;  // Cap for path.poses to bound message size on long runs.
+                                // <= 0 disables cap (unbounded — original behavior, risk of viz crash).
 string pcd_save_path = "";  // Auto-save path on shutdown
 
 float res_last[100000] = {0.0};
@@ -705,15 +707,21 @@ void publish_odometry(const rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPt
 void publish_path(rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubPath)
 {
     set_posestamp(msg_body_pose);
-    msg_body_pose.header.stamp = get_ros_time(lidar_end_time); // ros::Time().fromSec(lidar_end_time);
+    msg_body_pose.header.stamp = get_ros_time(lidar_end_time);
     msg_body_pose.header.frame_id = odom_frame;
 
-    /*** if path is too large, the rvis will crash ***/
     static int jjj = 0;
     jjj++;
-    if (jjj % 10 == 0) 
+    if (jjj % 10 == 0)
     {
         path.poses.push_back(msg_body_pose);
+        // Ring buffer: cap path.poses to bound message size + viz client RAM
+        // (the original code commented "if path is too large, the rvis will crash").
+        if (path_max_poses > 0) {
+            while ((int)path.poses.size() > path_max_poses) {
+                path.poses.erase(path.poses.begin());
+            }
+        }
         pubPath->publish(path);
     }
 }
@@ -839,6 +847,7 @@ public:
     LaserMappingNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions()) : Node("laser_mapping", options)
     {
         this->declare_parameter<bool>("publish.path_en", true);
+        this->declare_parameter<int>("publish.path_max_poses", 3600);
         this->declare_parameter<bool>("publish.effect_map_en", false);
         this->declare_parameter<bool>("publish.map_en", false);
         this->declare_parameter<bool>("publish.scan_publish_en", true);
@@ -880,6 +889,7 @@ public:
         this->declare_parameter<string>("qos_reliability", "reliable");  // reliable or best_effort
 
         this->get_parameter_or<bool>("publish.path_en", path_en, true);
+        this->get_parameter_or<int>("publish.path_max_poses", path_max_poses, 3600);
         this->get_parameter_or<bool>("publish.effect_map_en", effect_pub_en, false);
         this->get_parameter_or<bool>("publish.map_en", map_pub_en, false);
         this->get_parameter_or<bool>("publish.scan_publish_en", scan_pub_en, true);

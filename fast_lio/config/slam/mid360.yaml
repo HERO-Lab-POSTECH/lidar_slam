@@ -42,6 +42,8 @@
         publish:
             scan_bodyframe_pub_en: true  # point cloud in body-frame (required for localization)
             path_en: true                # path visualization
+            path_max_poses: 3600         # Cap path.poses ring-buffer (~1h @ 1Hz publish rate).
+                                         # 0 or negative disables cap (unbounded — risk of viz crash on long runs).
             map_en: false                # map visualization (disable for localization mode)
             scan_publish_en: false       # point cloud in world-frame (disable for localization mode)
             effect_map_en: false         # ICP effective points
