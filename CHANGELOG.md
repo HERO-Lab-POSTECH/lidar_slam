@@ -42,6 +42,14 @@
   - **flush 모드에서 RAM peak 28% 감소** — 중간 flush로 `pcl_wait_save` 비워짐
   - candidate-flush의 part 파일: `scans_part000.pcd` 420,160 pts + `scans_part001.pcd` 443,067 pts → consolidate 후 675,639 pts (정상 동작)
 
+- 추가 시나리오 검증 (3종):
+
+  | 모드 | 결과 | 검증 항목 |
+  |---|---|---|
+  | `service-call` (interval=300, t=30s에 `ros2 service call /map_save`) | response `success=True, 'Map saved to ...'`; 호출 직후 PCD = **423,951 pts** | **빈 PCD 버그 fix 확인** (이전엔 `pcl_wait_pub` 0 pts 저장) |
+  | `ram-only` (`interval: -1`) | final 677,211 pts, parts 0개, RSS 340 MB | flush disabled 분기 정상 (기존 RAM-only 동작 유지) |
+  | `no-consolidate` (`consolidate_on_shutdown: false`) | final 미생성, parts 2개 (421k+445k) 디스크 잔존, log: `2 part(s) left on disk, 407606 buffered points discarded` | shutdown skip 분기 정상 |
+
 ## [Unreleased] — Phase A-2: laserMapping.cpp dead code 제거 (refactor)
 
 ### Changed
