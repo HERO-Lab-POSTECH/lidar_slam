@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased] — Phase P6: Config structure (refactor)
+
+### Changed
+- `config/slam_2d.lua`: standardized header docstring + category separators (FRAMES/SENSORS/TF AND PUBLISHING/SAMPLING RATIOS/MAP BUILDER/TRAJECTORY BUILDER/POSE GRAPH) + unit annotations ([m]/[s]/[rad])
+
+### Added
+- No new parameters — documentation only
+
+### Verification
+- colcon build PASS (cartographer_slam 0.75s)
+- lua not installed; cartographer build is primary gate — PASS
+
+### Notes
+- Values unchanged — cosmetic / documentation only per spec §2.7
+
 ## [Unreleased] — Phase P5a: Launch arg standardization (refactor)
 
 ### Changed (BREAKING — external launch invocations)
