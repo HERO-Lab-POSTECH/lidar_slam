@@ -66,13 +66,16 @@ EXAMPLES
     use_localization:=true map_path:=/path/to/map.pbstream
 
   # Continue mapping from existing map (load + save to different path)
-  # NOTE: output_map_path is REQUIRED to save results.
-  #       Without it, mapping runs but nothing is saved on shutdown.
   ros2 launch cartographer_slam slam.launch.py \\
     map_path:=/path/to/map_v2.pbstream \\
     load_frozen_state:=false \\
     output_map_path:=/path/to/map_v3.pbstream \\
     use_sim_time:=true
+
+  # Auto-timestamp map save (empty output_map_path = auto)
+  # Map is always saved on shutdown to $PKRC_MAP_DIR/cartographer/<timestamp>/map.pbstream
+  # and a `latest` symlink is updated.
+  ros2 launch cartographer_slam slam.launch.py
 """
 
 from launch import LaunchDescription
@@ -81,6 +84,31 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 import os
+
+
+def _resolve_map_path(user_path: str, pkg: str, filename: str) -> str:
+    """Workspace-standard map save path resolution (spec §2.9).
+
+    Empty user_path → auto-timestamp dir under $PKRC_MAP_DIR/<pkg>/
+    (or ~/data/maps/<pkg>/), and update relative `latest` symlink.
+    Non-empty user_path → use as-is, ensure parent dir exists.
+    """
+    from datetime import datetime
+    from pathlib import Path
+
+    if user_path:
+        Path(user_path).parent.mkdir(parents=True, exist_ok=True)
+        return user_path
+
+    base = Path(os.environ.get('PKRC_MAP_DIR', os.path.expanduser('~/data/maps')))
+    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    target_dir = base / pkg / ts
+    target_dir.mkdir(parents=True, exist_ok=True)
+    latest = base / pkg / 'latest'
+    if latest.is_symlink() or latest.exists():
+        latest.unlink()
+    latest.symlink_to(ts)
+    return str(target_dir / filename)
 
 
 def launch_setup(context):
@@ -98,14 +126,12 @@ def launch_setup(context):
     # Auto-append .pbstream extension if missing
     if map_path and not map_path.endswith('.pbstream'):
         map_path += '.pbstream'
-    if output_map_path and not output_map_path.endswith('.pbstream'):
-        output_map_path += '.pbstream'
 
-    # Auto-create directory for output_map_path
-    if output_map_path:
-        save_dir = os.path.dirname(output_map_path)
-        if save_dir:
-            os.makedirs(save_dir, exist_ok=True)
+    output_map_path = _resolve_map_path(output_map_path, 'cartographer', 'map.pbstream')
+
+    # Auto-append .pbstream extension if user-supplied path lacks it
+    if not output_map_path.endswith('.pbstream'):
+        output_map_path += '.pbstream'
 
     # Package paths
     pkg_share = FindPackageShare('cartographer_slam').find('cartographer_slam')
@@ -153,9 +179,10 @@ def launch_setup(context):
     if map_path:
         cartographer_args.extend(['-load_state_filename', map_path])
         cartographer_args.extend(['-load_frozen_state', 'true' if use_localization else load_frozen_state])
-    if output_map_path:
-        cartographer_args.extend(['-save_state_filename', output_map_path])
-        cartographer_args.extend(['-map_resolution', resolution])
+    # Always pass save_state_filename — _resolve_map_path returns auto-timestamp
+    # path when user didn't specify, so map is always saved on shutdown.
+    cartographer_args.extend(['-save_state_filename', output_map_path])
+    cartographer_args.extend(['-map_resolution', resolution])
 
     nodes.append(Node(
         package='cartographer_slam',

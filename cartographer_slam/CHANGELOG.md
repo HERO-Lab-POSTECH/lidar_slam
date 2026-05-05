@@ -1,5 +1,28 @@
 # Changelog
 
+## [Unreleased] — Phase P7: Map save UX (refactor)
+
+### Changed
+- `launch/slam.launch.py`: `output_map_path` handling updated — `_resolve_map_path` called before `.pbstream` extension logic
+- `launch/slam.launch.py`: old `if output_map_path: os.makedirs(...)` block removed (redundant — helper handles it)
+- `launch/slam.launch.py`: `if output_map_path:` guard on `cartographer_args.extend(['-save_state_filename', ...])` removed — save always happens (helper always returns a valid path)
+- `launch/slam.launch.py`: header docstring: removed outdated NOTE about `output_map_path` being required; added auto-timestamp example
+- `launch/slam.launch.py`: `DeclareLaunchArgument('output_map_path')` description updated: `Empty = auto-timestamp`
+
+### Added
+- `launch/slam.launch.py`: `_resolve_map_path(user_path, pkg, filename)` inline helper (spec §2.9):
+  - Empty `output_map_path` → auto-timestamp dir `$PKRC_MAP_DIR/cartographer/<YYYYMMDD_HHMMSS>/` (fallback `~/data/maps`)
+  - Updates relative `latest -> <ts>` symlink
+  - Non-empty → use as-is, parent dir auto-created
+
+### Verification
+- colcon build PASS (cartographer_slam 0.54s)
+- `ros2 launch cartographer_slam slam.launch.py --show-args` PASS
+- Empty `output_map_path`: timestamp dir + `latest` symlink created under `$PKRC_MAP_DIR/cartographer/`
+
+### Notes
+- map is now always saved on shutdown even when user omits `output_map_path`
+
 ## [Unreleased] — Phase P6: Config structure (refactor)
 
 ### Changed

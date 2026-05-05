@@ -10,7 +10,7 @@ LAUNCH ARGUMENTS
   config_path     : FAST-LIO config file path               (default: <pkg>/config/slam/mid360.yaml)
   use_rviz        : Launch RViz                             (default: 'false')
   rviz_config_path: RViz config file path                   (default: <pkg>/rviz/fastlio.rviz)
-  output_map_path : Path to save PCD map on shutdown        (default: '' = use default path)
+  output_map_path : Path to save PCD map on shutdown        (default: '' = auto-timestamp under $PKRC_MAP_DIR/fast_lio/<YYYYMMDD_HHMMSS>/)
 
 ================================================================================
 TF TREE (provided by boat_description URDF)
@@ -36,7 +36,7 @@ TOPICS
 ================================================================================
 EXAMPLES
 ================================================================================
-  # Basic mapping (default)
+  # Basic mapping — map auto-saved to $PKRC_MAP_DIR/fast_lio/<timestamp>/map.pcd
   ros2 launch fast_lio mapping.launch.py
 
   # Mapping without RViz
@@ -49,84 +49,100 @@ EXAMPLES
   ros2 launch fast_lio mapping.launch.py use_sim_time:=true
 """
 
+import os
 import os.path
 
 from ament_index_python.packages import get_package_share_directory
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
-from launch.conditions import IfCondition
 
 from launch_ros.actions import Node
 
 
-def generate_launch_description():
+def _resolve_map_path(user_path: str, pkg: str, filename: str) -> str:
+    """Workspace-standard map save path resolution (spec §2.9).
+
+    Empty user_path → auto-timestamp dir under $PKRC_MAP_DIR/<pkg>/
+    (or ~/data/maps/<pkg>/), and update relative `latest` symlink.
+    Non-empty user_path → use as-is, ensure parent dir exists.
+    """
+    from datetime import datetime
+    from pathlib import Path
+
+    if user_path:
+        Path(user_path).parent.mkdir(parents=True, exist_ok=True)
+        return user_path
+
+    base = Path(os.environ.get('PKRC_MAP_DIR', os.path.expanduser('~/data/maps')))
+    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    target_dir = base / pkg / ts
+    target_dir.mkdir(parents=True, exist_ok=True)
+    latest = base / pkg / 'latest'
+    if latest.is_symlink() or latest.exists():
+        latest.unlink()
+    latest.symlink_to(ts)
+    return str(target_dir / filename)
+
+
+def _setup_nodes(context):
+    use_sim_time = LaunchConfiguration('use_sim_time').perform(context)
+    config_path = LaunchConfiguration('config_path').perform(context)
+    use_rviz = LaunchConfiguration('use_rviz').perform(context).lower() == 'true'
+    rviz_config_path = LaunchConfiguration('rviz_config_path').perform(context)
+    output_map_path_arg = LaunchConfiguration('output_map_path').perform(context)
+
+    resolved_save_path = _resolve_map_path(output_map_path_arg, 'fast_lio', 'map.pcd')
+
     package_path = get_package_share_directory('fast_lio')
     boat_desc_path = get_package_share_directory('boat_description')
-    default_config_path = os.path.join(package_path, 'config', 'slam', 'mid360.yaml')
-    default_rviz_config_path = os.path.join(
-        package_path, 'rviz', 'fastlio.rviz')
 
-    use_sim_time = LaunchConfiguration('use_sim_time')
-    config_path = LaunchConfiguration('config_path')
-    use_rviz = LaunchConfiguration('use_rviz')
-    rviz_config_path = LaunchConfiguration('rviz_config_path')
-    output_map_path = LaunchConfiguration('output_map_path')
-
-    declare_use_sim_time_cmd = DeclareLaunchArgument(
-        'use_sim_time', default_value='false',
-        description='Use simulation (Gazebo) clock if true'
-    )
-    declare_config_path_cmd = DeclareLaunchArgument(
-        'config_path', default_value=default_config_path,
-        description='Full path to FAST-LIO config yaml file'
-    )
-    declare_use_rviz_cmd = DeclareLaunchArgument(
-        'use_rviz', default_value='false',
-        description='Use RViz to monitor results'
-    )
-    declare_rviz_config_path_cmd = DeclareLaunchArgument(
-        'rviz_config_path', default_value=default_rviz_config_path,
-        description='RViz config file path'
-    )
-    declare_output_map_path_cmd = DeclareLaunchArgument(
-        'output_map_path', default_value='',
-        description='Path to save PCD map on shutdown. Empty uses default.'
-    )
+    nodes = []
 
     fast_lio_node = Node(
         package='fast_lio',
         executable='fastlio_mapping',
         parameters=[config_path,
-                    {'use_sim_time': use_sim_time,
-                     'pcd_save.save_path': output_map_path}],
+                    {'use_sim_time': use_sim_time == 'true',
+                     'pcd_save.save_path': resolved_save_path}],
         output='screen'
     )
-    rviz_node = Node(
-        package='rviz2',
-        executable='rviz2',
-        arguments=['-d', rviz_config_path],
-        condition=IfCondition(use_rviz)
-    )
+    nodes.append(fast_lio_node)
+
+    if use_rviz:
+        nodes.append(Node(
+            package='rviz2',
+            executable='rviz2',
+            arguments=['-d', rviz_config_path],
+        ))
 
     # Robot state publisher (boat_description URDF)
-    robot_state_publisher = IncludeLaunchDescription(
+    nodes.append(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(boat_desc_path, 'launch', 'robot_state_publisher.launch.py')
         )
-    )
+    ))
 
-    ld = LaunchDescription()
-    ld.add_action(declare_use_sim_time_cmd)
-    ld.add_action(declare_config_path_cmd)
-    ld.add_action(declare_use_rviz_cmd)
-    ld.add_action(declare_rviz_config_path_cmd)
-    ld.add_action(declare_output_map_path_cmd)
+    return nodes
 
-    ld.add_action(robot_state_publisher)
-    ld.add_action(fast_lio_node)
-    ld.add_action(rviz_node)
 
-    return ld
+def generate_launch_description():
+    package_path = get_package_share_directory('fast_lio')
+    default_config_path = os.path.join(package_path, 'config', 'slam', 'mid360.yaml')
+    default_rviz_config_path = os.path.join(package_path, 'rviz', 'fastlio.rviz')
+
+    return LaunchDescription([
+        DeclareLaunchArgument('use_sim_time', default_value='false',
+            description='Use simulation (Gazebo) clock if true'),
+        DeclareLaunchArgument('config_path', default_value=default_config_path,
+            description='Full path to FAST-LIO config yaml file'),
+        DeclareLaunchArgument('use_rviz', default_value='false',
+            description='Use RViz to monitor results'),
+        DeclareLaunchArgument('rviz_config_path', default_value=default_rviz_config_path,
+            description='RViz config file path'),
+        DeclareLaunchArgument('output_map_path', default_value='',
+            description='Path to save PCD map on shutdown. Empty = auto-timestamp.'),
+        OpaqueFunction(function=_setup_nodes),
+    ])
