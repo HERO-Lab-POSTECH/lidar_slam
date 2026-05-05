@@ -25,10 +25,10 @@ options = {
   trajectory_builder = TRAJECTORY_BUILDER,
 
   -- Frame configuration
-  -- TF tree: map -> odom -> base_link -> {imu_link, livox_frame, sonar_link}
+  -- TF tree: map -> odom -> base_link -> {imu_link, livox_link, sonar_link}
   -- Note: base_link children are published by boat_description URDF
   map_frame = "map",
-  tracking_frame = "base_link",
+  tracking_frame = "livox_link",
   published_frame = "base_link",
   odom_frame = "odom",
   provide_odom_frame = true,         -- publish odom frame for consistency
