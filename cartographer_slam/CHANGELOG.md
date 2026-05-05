@@ -1,5 +1,25 @@
 # Changelog
 
+## [Unreleased] — Phase P5a: Launch arg standardization (refactor)
+
+### Changed (BREAKING — external launch invocations)
+- slam.launch.py:
+  - `localization` → `use_localization`
+  - `load_state_filename` → `map_path`
+  - `save_state_filename` → `output_map_path`
+- 헤더 docstring 표준 적용 (spec §2.5.3)
+
+### Migration
+- `localization:=true` → `use_localization:=true`
+- `load_state_filename:=/p/x.pbstream` → `map_path:=/p/x.pbstream`
+- `save_state_filename:=/p/y.pbstream` → `output_map_path:=/p/y.pbstream`
+
+### Verification
+- colcon build PASS
+- ros2 launch --show-args: 신규 arg 표시
+
+---
+
 ## [Unreleased] — Phase P4b: Topic naming (refactor)
 
 ### Changed
