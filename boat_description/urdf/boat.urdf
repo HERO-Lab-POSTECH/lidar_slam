@@ -43,4 +43,43 @@
     <child link="oculus"/>
     <origin xyz="0 0 0" rpy="0 0 0"/>
   </joint>
+
+  <!-- ===== Phase P3: REP-105 + Autoware aliases ===== -->
+
+  <!-- Modern alias: livox_link (REP-105 + Autoware standard) -->
+  <link name="livox_link"/>
+  <joint name="base_to_livox_link" type="fixed">
+    <parent link="base_link"/>
+    <child link="livox_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Per-sensor sonar links (under sonar_link, common mount point) -->
+  <link name="oculus_link"/>
+  <joint name="sonar_to_oculus_link" type="fixed">
+    <parent link="sonar_link"/>
+    <child link="oculus_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="ping360_link"/>
+  <joint name="sonar_to_ping360_link" type="fixed">
+    <parent link="sonar_link"/>
+    <child link="ping360_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="ping1d_link"/>
+  <joint name="sonar_to_ping1d_link" type="fixed">
+    <parent link="sonar_link"/>
+    <child link="ping1d_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="sonoptix_link"/>
+  <joint name="sonar_to_sonoptix_link" type="fixed">
+    <parent link="sonar_link"/>
+    <child link="sonoptix_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
 </robot>
