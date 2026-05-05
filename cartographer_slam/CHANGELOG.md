@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased] — Phase P3: TF naming standard (refactor)
+
+### Changed
+- `cartographer_slam/config/slam_2d.lua`:
+  - `tracking_frame = "base_link"` → `"livox_link"` (sensor frame for scan input)
+  - TF tree comment: `livox_frame` → `livox_link`
+  - `published_frame`, `odom_frame`, `map_frame` already correct (no change)
+
+### Verification
+- `colcon build --packages-select cartographer_slam --symlink-install`: PASS
+
+---
+
 ## [Unreleased] — Phase P2: Foxglove removal (refactor)
 
 ### Removed

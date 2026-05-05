@@ -84,8 +84,8 @@ LocalizationNode::LocalizationNode()
 
     // TF frame names
     this->declare_parameter<std::string>("map_frame", "map");
-    this->declare_parameter<std::string>("odom_frame", "camera_init");
-    this->declare_parameter<std::string>("body_frame", "body");
+    this->declare_parameter<std::string>("odom_frame", "odom");
+    this->declare_parameter<std::string>("body_frame", "base_link");
 
     // Get parameters
     std::string map_path;

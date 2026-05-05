@@ -910,7 +910,7 @@ void Preprocess::pub_func(PointCloudXYZI& pl, const rclcpp::Time& ct)
   pl.width = pl.size();
   sensor_msgs::msg::PointCloud2 output;
   pcl::toROSMsg(pl, output);
-  output.header.frame_id = "livox";
+  output.header.frame_id = "livox_link";
   output.header.stamp = ct;
 }
 

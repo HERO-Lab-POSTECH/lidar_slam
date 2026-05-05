@@ -8,7 +8,7 @@
         cube_side_length: 1000.0
 
         tf:
-            odom_frame: "map"               # global fixed frame (SLAM origin)
+            odom_frame: "odom"              # REP-105: odometry frame
             body_frame: "base_link"         # robot body frame
 
         common:
