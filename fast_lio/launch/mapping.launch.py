@@ -12,7 +12,6 @@ LAUNCH ARGUMENTS
   rviz            : Launch RViz                             (default: 'true')
   rviz_cfg        : RViz config file path                   (default: <pkg>/rviz/fastlio.rviz)
   save_map_path   : Path to save PCD map on shutdown        (default: '' = use default path)
-  foxglove        : Launch Foxglove bridge (ws://localhost:8765) (default: 'true')
   qos_reliability : QoS reliability for sensor subscribers  (default: 'reliable')
                     Options: reliable, best_effort
                     Note: Use best_effort when playing back old bag files recorded
@@ -54,9 +53,6 @@ EXAMPLES
   # Bag playback with simulation time
   ros2 launch fast_lio mapping.launch.py use_sim_time:=true
 
-  # Disable Foxglove bridge
-  ros2 launch fast_lio mapping.launch.py foxglove:=false
-
   # BEST_EFFORT QoS (for old bag files)
   ros2 launch fast_lio mapping.launch.py use_sim_time:=true qos_reliability:=best_effort
 """
@@ -87,7 +83,6 @@ def generate_launch_description():
     rviz_use = LaunchConfiguration('rviz')
     rviz_cfg = LaunchConfiguration('rviz_cfg')
     save_map_path = LaunchConfiguration('save_map_path')
-    foxglove = LaunchConfiguration('foxglove')
 
     declare_use_sim_time_cmd = DeclareLaunchArgument(
         'use_sim_time', default_value='false',
@@ -112,10 +107,6 @@ def generate_launch_description():
     declare_save_map_path_cmd = DeclareLaunchArgument(
         'save_map_path', default_value='',
         description='Path to save PCD map on shutdown. Empty uses default.'
-    )
-    declare_foxglove_cmd = DeclareLaunchArgument(
-        'foxglove', default_value='true',
-        description='Launch Foxglove bridge (connect via ws://localhost:8765)'
     )
     declare_qos_reliability_cmd = DeclareLaunchArgument(
         'qos_reliability', default_value='reliable',
@@ -147,13 +138,6 @@ def generate_launch_description():
         )
     )
 
-    foxglove_bridge_node = Node(
-        package='foxglove_bridge',
-        executable='foxglove_bridge',
-        parameters=[{'use_sim_time': use_sim_time}],
-        condition=IfCondition(foxglove)
-    )
-
     ld = LaunchDescription()
     ld.add_action(declare_use_sim_time_cmd)
     ld.add_action(declare_config_path_cmd)
@@ -161,12 +145,10 @@ def generate_launch_description():
     ld.add_action(declare_rviz_cmd)
     ld.add_action(declare_rviz_config_path_cmd)
     ld.add_action(declare_save_map_path_cmd)
-    ld.add_action(declare_foxglove_cmd)
     ld.add_action(declare_qos_reliability_cmd)
 
     ld.add_action(robot_state_publisher)
     ld.add_action(fast_lio_node)
     ld.add_action(rviz_node)
-    ld.add_action(foxglove_bridge_node)
 
     return ld
