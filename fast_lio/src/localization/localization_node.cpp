@@ -29,6 +29,7 @@
 #include "fast_lio/localization/open3d_conversions.h"
 #include "fast_lio/localization/pose_utils.h"
 #include "fast_lio/localization/tf_publisher.h"
+#include "fast_lio/qos.hpp"
 
 namespace pose_utils = fast_lio::localization::pose_utils;
 
@@ -176,8 +177,8 @@ LocalizationNode::LocalizationNode()
     RCLCPP_INFO(this->get_logger(), "Map downsampled to %zu points", pcd_map_fine_->points_.size());
 
     // Create publishers
-    pub_odometry_ = this->create_publisher<nav_msgs::msg::Odometry>("/fast_lio/localization/odometry", 10);
-    pub_confidence_ = this->create_publisher<std_msgs::msg::Float32>("/fast_lio/localization/confidence", 10);
+    pub_odometry_ = this->create_publisher<nav_msgs::msg::Odometry>("/localization/fast_lio_loc/odometry", pkrc_qos::reliable_qos());
+    pub_confidence_ = this->create_publisher<std_msgs::msg::Float32>("/localization/fast_lio_loc/confidence", pkrc_qos::reliable_qos());
 
     // Create subscribers
     sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>(

@@ -1,5 +1,21 @@
 # Changelog
 
+## [Unreleased] — Phase P4b: Topic naming (refactor)
+
+### Changed
+- `include/cartographer_slam/node_constants.h`:
+  - `kOdometryOutputTopic`: `"cartographer_2d/odometry"` → `"/localization/cartographer/odometry"` (absolute path)
+
+### Notes
+- QoS kept as literal `10` depth for cartographer publishers (no helper adoption in P4b)
+- Other `node_constants.h` constants (kOccupancyGridTopic, kScanMatchedPointCloudTopic, etc.) unchanged — not in P4b scope per spec §2.3.2
+
+### Verification
+- colcon build PASS (cartographer_slam, ~61s combined)
+- static grep: 0 legacy `cartographer_2d/odometry` refs in source
+
+---
+
 ## [Unreleased] — Phase P4a: QoS helper module (refactor)
 
 ### Added

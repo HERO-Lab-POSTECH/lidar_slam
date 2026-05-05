@@ -1,5 +1,33 @@
 # Changelog
 
+## [Unreleased] — Phase P4b: Topic naming + QoS (refactor)
+
+### Changed
+- `src/slam/laserMapping.cpp`: publisher topic renames + QoS helper adoption
+  - `/fast_lio/odometry` → `/localization/fast_lio/odometry` (RELIABLE_QOS)
+  - `/fast_lio/cloud_registered_body` → `/localization/fast_lio/points_body` (SENSOR_QOS)
+  - `/fast_lio/debug/cloud_registered` → `/fast_lio/debug/points_world` (SENSOR_QOS)
+  - `/fast_lio/debug/cloud_effected` → `/fast_lio/debug/points_effected` (SENSOR_QOS)
+  - `/fast_lio/debug/map`: name unchanged, QoS → SENSOR_QOS helper
+  - `/fast_lio/debug/path`: name unchanged, QoS → SENSOR_QOS helper
+- `src/localization/localization_node.cpp`: publisher topic renames + QoS helper adoption
+  - `/fast_lio/localization/odometry` → `/localization/fast_lio_loc/odometry` (RELIABLE_QOS)
+  - `/fast_lio/localization/confidence` → `/localization/fast_lio_loc/confidence` (RELIABLE_QOS)
+- `src/localization/tf_publisher.cpp`: publisher topic renames + QoS helper adoption
+  - `/fast_lio/localization/map` → `/localization/fast_lio_loc/map` (LATCHED_QOS)
+  - `/fast_lio/localization/occupancy_grid` → `/localization/fast_lio_loc/occupancy_grid` (LATCHED_QOS)
+- `scripts/regression_compare.py`: `--topic` default updated to `/localization/fast_lio/odometry`
+- `scripts/regression_plot.py`: `read_xyz` default topic updated to `/localization/fast_lio_loc/odometry`
+
+### Notes
+- Subscribers in `localization_node.cpp` (`/fast_lio/odometry`, `/fast_lio/cloud_registered_body`) intentionally unchanged — updated in P4c (sonar_3d sync)
+
+### Verification
+- colcon build PASS (fast_lio, cartographer_slam, ~61s)
+- static grep: 0 legacy publisher topic refs in source
+
+---
+
 ## [Unreleased] — Phase P4a: QoS helper module (refactor)
 
 ### Added
