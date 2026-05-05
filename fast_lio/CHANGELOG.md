@@ -1,5 +1,28 @@
 # Changelog
 
+## [Unreleased] — Phase P7: Map save UX (refactor)
+
+### Changed
+- `launch/mapping.launch.py`: `generate_launch_description()` node creation wrapped in `OpaqueFunction` (`_setup_nodes`) so `output_map_path` can be resolved at launch time (was static LaunchConfiguration substitution)
+- `launch/mapping.launch.py`: `output_map_path` description updated: `Empty = auto-timestamp`
+- `launch/mapping.launch.py`: `import os.path` → `import os` (needed for `os.environ`/`os.path.expanduser`)
+- `launch/mapping.launch.py`: `IfCondition` removed (replaced by plain `if use_rviz:` in OpaqueFunction)
+- Header docstring updated: default note for `output_map_path` + auto-timestamp example
+
+### Added
+- `launch/mapping.launch.py`: `_resolve_map_path(user_path, pkg, filename)` inline helper (spec §2.9):
+  - Empty `output_map_path` → auto-timestamp dir `$PKRC_MAP_DIR/fast_lio/<YYYYMMDD_HHMMSS>/` (fallback `~/data/maps`)
+  - Updates relative `latest -> <ts>` symlink
+  - Non-empty → use as-is, parent dir auto-created
+
+### Verification
+- colcon build PASS (fast_lio 0.27s)
+- `ros2 launch fast_lio mapping.launch.py --show-args` PASS
+- Empty `output_map_path`: timestamp dir + `latest` symlink created under `$PKRC_MAP_DIR/fast_lio/`
+
+### Notes
+- `IfCondition` from `launch.conditions` is no longer imported (was only used for rviz conditional)
+
 ## [Unreleased] — Phase P6: Config structure (refactor)
 
 ### Changed
