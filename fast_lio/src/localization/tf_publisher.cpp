@@ -12,6 +12,7 @@
 
 #include "fast_lio/localization/occupancy_grid_generator.hpp"
 #include "fast_lio/localization/open3d_conversions.h"
+#include "fast_lio/qos.hpp"
 
 namespace fast_lio {
 namespace localization {
@@ -25,16 +26,15 @@ TfPublisher::TfPublisher(rclcpp::Node* node,
       mat_odom2map_(mat_odom2map),
       odom_mutex_(odom_mutex)
 {
-    rclcpp::QoS map_qos(1);
-    map_qos.transient_local();
+    auto map_qos = pkrc_qos::latched_qos();
 
     pub_map_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>(
-        "/fast_lio/localization/map", map_qos);
+        "/localization/fast_lio_loc/map", map_qos);
 
     if (config_.occupancy_grid_publish)
     {
         pub_occupancy_grid_ = node_->create_publisher<nav_msgs::msg::OccupancyGrid>(
-            "/fast_lio/localization/occupancy_grid", map_qos);
+            "/localization/fast_lio_loc/occupancy_grid", map_qos);
     }
 
     tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(node_);

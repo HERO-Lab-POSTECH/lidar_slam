@@ -56,6 +56,7 @@
 #include <livox_driver/msg/custom_msg.hpp>
 #include <fast_lio/slam/preprocess.h>
 #include <fast_lio/slam/ikd_Tree.h>
+#include "fast_lio/qos.hpp"
 
 #define INIT_TIME           (0.1)
 #define LASER_POINT_COV     (0.001)
@@ -1002,23 +1003,23 @@ public:
         sub_imu_ = this->create_subscription<sensor_msgs::msg::Imu>(imu_topic, sensor_qos, imu_cbk);
 
         // Required publishers (used by SC-PGO)
-        pubOdomAftMapped_ = this->create_publisher<nav_msgs::msg::Odometry>("/fast_lio/odometry", 20);
-        pubLaserCloudFull_body_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/fast_lio/cloud_registered_body", 20);
+        pubOdomAftMapped_ = this->create_publisher<nav_msgs::msg::Odometry>("/localization/fast_lio/odometry", pkrc_qos::reliable_qos());
+        pubLaserCloudFull_body_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/localization/fast_lio/points_body", pkrc_qos::sensor_qos());
         tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
         // Debug publishers (conditionally created)
         // Also create if pcd_save_en for map accumulation
         if (scan_pub_en || pcd_save_en) {
-            pubLaserCloudFull_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/fast_lio/debug/cloud_registered", 20);
+            pubLaserCloudFull_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/fast_lio/debug/points_world", pkrc_qos::sensor_qos());
         }
         if (effect_pub_en) {
-            pubLaserCloudEffect_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/fast_lio/debug/cloud_effected", 20);
+            pubLaserCloudEffect_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/fast_lio/debug/points_effected", pkrc_qos::sensor_qos());
         }
         if (map_pub_en) {
-            pubLaserCloudMap_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/fast_lio/debug/map", 20);
+            pubLaserCloudMap_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/fast_lio/debug/map", pkrc_qos::sensor_qos());
         }
         if (path_en) {
-            pubPath_ = this->create_publisher<nav_msgs::msg::Path>("/fast_lio/debug/path", 20);
+            pubPath_ = this->create_publisher<nav_msgs::msg::Path>("/fast_lio/debug/path", pkrc_qos::sensor_qos());
         }
 
         //------------------------------------------------------------------------------------------------------

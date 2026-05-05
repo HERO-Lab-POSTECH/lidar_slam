@@ -2,7 +2,7 @@
 """
 fast_lio regression comparison: baseline vs candidate trajectory.
 
-두 ros2 bag(`/fast_lio/odometry`)을 읽어 다음을 계산:
+두 ros2 bag(`/localization/fast_lio/odometry`)을 읽어 다음을 계산:
 - ATE (Absolute Trajectory Error) RMSE
 - 최종 drift (마지막 pose 차이)
 - 메시지 카운트 동등성
@@ -70,7 +70,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--baseline", required=True, type=Path)
     parser.add_argument("--candidate", required=True, type=Path)
-    parser.add_argument("--topic", default="/fast_lio/odometry")
+    parser.add_argument("--topic", default="/localization/fast_lio/odometry")
     parser.add_argument("--ate-threshold", type=float, default=0.01)
     parser.add_argument("--drift-threshold", type=float, default=0.05)
     args = parser.parse_args()
