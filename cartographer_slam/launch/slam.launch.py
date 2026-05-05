@@ -3,23 +3,30 @@ Livox Mid-360 Cartographer 2D SLAM unified launch file
 
 Supports both Livox CustomMsg and PointCloud2 input types.
 
-Arguments:
-  input_type    : 'livox' or 'pointcloud2' (default: 'livox')
-  localization  : 'true' or 'false' (default: 'false')
-  use_sim_time  : 'true' or 'false' (default: 'false')
-  use_rviz      : 'true' or 'false' (default: 'false')
-  resolution    : Occupancy grid resolution (default: '0.05')
-  load_state_filename : Path to .pbstream file for localization/continued mapping
-  save_state_filename : Path to save .pbstream file on shutdown
-  load_frozen_state   : 'true' for localization, 'false' to continue mapping
+================================================================================
+LAUNCH ARGUMENTS
+================================================================================
+  input_type       : 'livox' or 'pointcloud2'             (default: 'livox')
+  use_localization : Enable pure localization mode        (default: 'false')
+  use_sim_time     : Use simulation time                  (default: 'false')
+  use_rviz         : Launch RViz                          (default: 'false')
+  resolution       : Occupancy grid resolution            (default: '0.05')
+  map_path         : Path to .pbstream file to load       (default: '')
+  output_map_path  : Path to save .pbstream on shutdown   (default: '')
+  load_frozen_state: Load map as frozen (true=localization, false=continue mapping)
+                                                          (default: 'true')
 
-Configuration selection:
-  livox mapping           -> livox_2d.lua
-  livox localization      -> localization.lua
-  pointcloud2 mapping     -> pointcloud2_2d.lua
+================================================================================
+CONFIGURATION SELECTION
+================================================================================
+  livox mapping            -> livox_2d.lua
+  livox localization       -> localization.lua
+  pointcloud2 mapping      -> pointcloud2_2d.lua
   pointcloud2 localization -> pointcloud2_localization.lua
 
-TF Tree:
+================================================================================
+TF TREE
+================================================================================
   map (map_frame)
   └── odom (odom_frame)
       └── base_link (tracking_frame)
@@ -27,7 +34,9 @@ TF Tree:
           ├── imu_link
           └── sonar_link
 
-Topics:
+================================================================================
+TOPICS
+================================================================================
   Input (livox mode):
     - /sensor/lidar/livox_mid360/points (livox_driver/CustomMsg)
     - /sensor/ins/livox_mid360/imu (Imu)
@@ -39,7 +48,9 @@ Topics:
     - /cartographer_2d/submaps, /cartographer_2d/trajectory_nodes
     - /cartographer_2d/tracked_pose, /cartographer_2d/odom
 
-Examples:
+================================================================================
+EXAMPLES
+================================================================================
   # Livox CustomMsg SLAM (default)
   ros2 launch cartographer_slam slam.launch.py
 
@@ -47,20 +58,20 @@ Examples:
   ros2 launch cartographer_slam slam.launch.py input_type:=pointcloud2
 
   # Livox Localization
-  ros2 launch cartographer_slam slam.launch.py localization:=true \\
-    load_state_filename:=/path/to/map.pbstream
+  ros2 launch cartographer_slam slam.launch.py use_localization:=true \\
+    map_path:=/path/to/map.pbstream
 
   # PointCloud2 Localization
   ros2 launch cartographer_slam slam.launch.py input_type:=pointcloud2 \\
-    localization:=true load_state_filename:=/path/to/map.pbstream
+    use_localization:=true map_path:=/path/to/map.pbstream
 
   # Continue mapping from existing map (load + save to different path)
-  # NOTE: save_state_filename is REQUIRED to save results.
+  # NOTE: output_map_path is REQUIRED to save results.
   #       Without it, mapping runs but nothing is saved on shutdown.
   ros2 launch cartographer_slam slam.launch.py \\
-    load_state_filename:=/path/to/map_v2.pbstream \\
+    map_path:=/path/to/map_v2.pbstream \\
     load_frozen_state:=false \\
-    save_state_filename:=/path/to/map_v3.pbstream \\
+    output_map_path:=/path/to/map_v3.pbstream \\
     use_sim_time:=true
 """
 
@@ -76,23 +87,23 @@ def launch_setup(context):
     """Generate launch nodes based on runtime configuration."""
     # Get launch configuration values
     input_type = LaunchConfiguration('input_type').perform(context).lower()
-    localization = LaunchConfiguration('localization').perform(context).lower() == 'true'
+    use_localization = LaunchConfiguration('use_localization').perform(context).lower() == 'true'
     use_rviz = LaunchConfiguration('use_rviz').perform(context).lower() == 'true'
     use_sim_time = LaunchConfiguration('use_sim_time').perform(context)
     resolution = LaunchConfiguration('resolution').perform(context)
-    load_state_filename = LaunchConfiguration('load_state_filename').perform(context)
-    save_state_filename = LaunchConfiguration('save_state_filename').perform(context)
+    map_path = LaunchConfiguration('map_path').perform(context)
+    output_map_path = LaunchConfiguration('output_map_path').perform(context)
     load_frozen_state = LaunchConfiguration('load_frozen_state').perform(context)
 
     # Auto-append .pbstream extension if missing
-    if load_state_filename and not load_state_filename.endswith('.pbstream'):
-        load_state_filename += '.pbstream'
-    if save_state_filename and not save_state_filename.endswith('.pbstream'):
-        save_state_filename += '.pbstream'
+    if map_path and not map_path.endswith('.pbstream'):
+        map_path += '.pbstream'
+    if output_map_path and not output_map_path.endswith('.pbstream'):
+        output_map_path += '.pbstream'
 
-    # Auto-create directory for save_state_filename
-    if save_state_filename:
-        save_dir = os.path.dirname(save_state_filename)
+    # Auto-create directory for output_map_path
+    if output_map_path:
+        save_dir = os.path.dirname(output_map_path)
         if save_dir:
             os.makedirs(save_dir, exist_ok=True)
 
@@ -108,7 +119,7 @@ def launch_setup(context):
 
     # Set environment variables for Lua config
     os.environ['CARTOGRAPHER_INPUT_TYPE'] = input_type
-    os.environ['CARTOGRAPHER_LOCALIZATION'] = 'true' if localization else 'false'
+    os.environ['CARTOGRAPHER_LOCALIZATION'] = 'true' if use_localization else 'false'
 
     # Select topic remapping based on input_type
     use_livox = (input_type == 'livox')
@@ -119,7 +130,7 @@ def launch_setup(context):
 
     # Log configuration
     nodes.append(LogInfo(
-        msg=f"[slam] input={input_type}, localization={localization}"
+        msg=f"[slam] input={input_type}, use_localization={use_localization}"
     ))
 
     # Robot state publisher
@@ -139,11 +150,11 @@ def launch_setup(context):
         '-configuration_directory', configuration_directory,
         '-configuration_basename', 'slam_2d.lua',
     ]
-    if load_state_filename:
-        cartographer_args.extend(['-load_state_filename', load_state_filename])
-        cartographer_args.extend(['-load_frozen_state', 'true' if localization else load_frozen_state])
-    if save_state_filename:
-        cartographer_args.extend(['-save_state_filename', save_state_filename])
+    if map_path:
+        cartographer_args.extend(['-load_state_filename', map_path])
+        cartographer_args.extend(['-load_frozen_state', 'true' if use_localization else load_frozen_state])
+    if output_map_path:
+        cartographer_args.extend(['-save_state_filename', output_map_path])
         cartographer_args.extend(['-map_resolution', resolution])
 
     nodes.append(Node(
@@ -160,14 +171,14 @@ def launch_setup(context):
     ))
 
     # Occupancy grid node
-    if localization:
+    if use_localization:
         # Localization mode: use pbstream_map_publisher for clean static map
         nodes.append(Node(
             package='cartographer_slam',
             executable='cartographer_pbstream_map_publisher',
             name='cartographer_map_publisher',
             arguments=[
-                '-pbstream_filename', load_state_filename,
+                '-pbstream_filename', map_path,
                 '-resolution', resolution,
             ],
             parameters=[{'use_sim_time': use_sim_time == 'true'}],
@@ -189,7 +200,7 @@ def launch_setup(context):
         ))
 
     # Trajectory filter (localization mode only) - filters out frozen trajectory
-    if localization:
+    if use_localization:
         nodes.append(Node(
             package='cartographer_slam',
             executable='trajectory_filter_node.py',
@@ -223,17 +234,17 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('input_type', default_value='livox',
                               description='Input type: livox (CustomMsg) or pointcloud2'),
-        DeclareLaunchArgument('localization', default_value='false',
-                              description='Use pure localization mode (requires load_state_filename)'),
+        DeclareLaunchArgument('use_localization', default_value='false',
+                              description='Use pure localization mode (requires map_path)'),
         DeclareLaunchArgument('use_sim_time', default_value='false',
                               description='Use simulation time'),
         DeclareLaunchArgument('use_rviz', default_value='false',
                               description='Launch RViz'),
         DeclareLaunchArgument('resolution', default_value='0.05',
                               description='Occupancy grid resolution'),
-        DeclareLaunchArgument('load_state_filename', default_value='',
+        DeclareLaunchArgument('map_path', default_value='',
                               description='Path to .pbstream file to load'),
-        DeclareLaunchArgument('save_state_filename', default_value='',
+        DeclareLaunchArgument('output_map_path', default_value='',
                               description='Path to save .pbstream file on shutdown'),
         DeclareLaunchArgument('load_frozen_state', default_value='true',
                               description='Load state as frozen (true for localization, false to continue mapping)'),

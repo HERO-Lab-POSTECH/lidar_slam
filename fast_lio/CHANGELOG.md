@@ -1,5 +1,41 @@
 # Changelog
 
+## [Unreleased] — Phase P5a: Launch arg standardization (refactor)
+
+### Changed (BREAKING — external launch invocations)
+- mapping.launch.py:
+  - `rviz` → `use_rviz`
+  - `save_map_path` → `output_map_path`
+  - `config_path` 단일화 (`config_file` 통합; default: `<pkg>/config/slam/mid360.yaml`)
+  - `rviz_cfg` → `rviz_config_path`
+- localization.launch.py:
+  - `rviz` → `use_rviz`
+  - `config_path` 단일화 (`config_file`/`lio_config_path`/`lio_config_file` 통합)
+- 헤더 docstring 표준 적용 (spec §2.5.3)
+
+### Removed (BREAKING)
+- mapping.launch.py: `qos_reliability` arg (QoS helper 적용 후 미사용 — P4)
+- mapping.launch.py: `config_file` arg (config_path 통합)
+- localization.launch.py: `lio_config_path`, `lio_config_file` args
+- localization.launch.py: `config_file` arg
+
+### Fixed
+- mapping.launch.py: `decalre_config_file_cmd` typo (블록 제거로 해결)
+
+### Migration
+- `rviz:=true` → `use_rviz:=true`
+- `save_map_path:=/path` → `output_map_path:=/path`
+- `rviz_cfg:=/path` → `rviz_config_path:=/path`
+- `config_file:=foo.yaml` → `config_path:=/full/path/to/foo.yaml`
+- `lio_config_path:=foo lio_config_file:=bar.yaml` → `config_path:=/full/path/to/foo/bar.yaml`
+- `qos_reliability:=...` → (제거; 영향 없음)
+
+### Verification
+- colcon build PASS
+- ros2 launch --show-args: 신규 arg 표시
+
+---
+
 ## [Unreleased] — Phase P4b: Topic naming + QoS (refactor)
 
 ### Changed
