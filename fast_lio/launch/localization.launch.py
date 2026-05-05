@@ -12,8 +12,6 @@ LAUNCH ARGUMENTS
   rviz            : Launch RViz                           (default: 'true')
   lio_config_path : FAST-LIO config directory             (default: <pkg>/config/slam)
   lio_config_file : FAST-LIO config file name             (default: 'mid360.yaml')
-  foxglove        : Launch Foxglove bridge (ws://localhost:8765) (default: 'true')
-
 ================================================================================
 TF TREE (provided by boat_description URDF)
 ================================================================================
@@ -46,9 +44,6 @@ EXAMPLES
 
   # Bag playback with simulation time
   ros2 launch fast_lio localization.launch.py map_path:=/path/to/map.pcd use_sim_time:=true
-
-  # Disable Foxglove bridge
-  ros2 launch fast_lio localization.launch.py map_path:=/path/to/map.pcd foxglove:=false
 
 ================================================================================
 WORKFLOW
@@ -85,7 +80,6 @@ def generate_launch_description():
     rviz = LaunchConfiguration('rviz')
     lio_config_path = LaunchConfiguration('lio_config_path')
     lio_config_file = LaunchConfiguration('lio_config_file')
-    foxglove = LaunchConfiguration('foxglove')
 
     declare_map_path_cmd = DeclareLaunchArgument(
         'map_path',
@@ -117,12 +111,6 @@ def generate_launch_description():
         default_value='mid360.yaml',
         description='FAST-LIO config file'
     )
-    declare_foxglove_cmd = DeclareLaunchArgument(
-        'foxglove',
-        default_value='true',
-        description='Launch Foxglove bridge (connect via ws://localhost:8765)'
-    )
-
     # FAST-LIO node (with map saving disabled for localization mode)
     fast_lio_node = Node(
         package='fast_lio',
@@ -170,14 +158,6 @@ def generate_launch_description():
         )
     )
 
-    # Foxglove bridge (conditional)
-    foxglove_bridge_node = Node(
-        package='foxglove_bridge',
-        executable='foxglove_bridge',
-        parameters=[{'use_sim_time': use_sim_time}],
-        condition=IfCondition(foxglove)
-    )
-
     ld = LaunchDescription()
     # Declare arguments
     ld.add_action(declare_map_path_cmd)
@@ -186,12 +166,10 @@ def generate_launch_description():
     ld.add_action(declare_rviz_cmd)
     ld.add_action(declare_lio_config_path_cmd)
     ld.add_action(declare_lio_config_file_cmd)
-    ld.add_action(declare_foxglove_cmd)
     # Nodes
     ld.add_action(robot_state_publisher)
     ld.add_action(fast_lio_node)
     ld.add_action(localization_node)
     ld.add_action(rviz_node)
-    ld.add_action(foxglove_bridge_node)
 
     return ld

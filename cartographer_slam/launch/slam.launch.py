@@ -8,7 +8,6 @@ Arguments:
   localization  : 'true' or 'false' (default: 'false')
   use_sim_time  : 'true' or 'false' (default: 'false')
   use_rviz      : 'true' or 'false' (default: 'false')
-  foxglove      : 'true' or 'false' (default: 'true') - Launch Foxglove bridge (ws://localhost:8765)
   resolution    : Occupancy grid resolution (default: '0.05')
   load_state_filename : Path to .pbstream file for localization/continued mapping
   save_state_filename : Path to save .pbstream file on shutdown
@@ -80,7 +79,6 @@ def launch_setup(context):
     input_type = LaunchConfiguration('input_type').perform(context).lower()
     localization = LaunchConfiguration('localization').perform(context).lower() == 'true'
     use_rviz = LaunchConfiguration('use_rviz').perform(context).lower() == 'true'
-    use_foxglove = LaunchConfiguration('foxglove').perform(context).lower() == 'true'
     use_sim_time = LaunchConfiguration('use_sim_time').perform(context)
     resolution = LaunchConfiguration('resolution').perform(context)
     load_state_filename = LaunchConfiguration('load_state_filename').perform(context)
@@ -219,15 +217,6 @@ def launch_setup(context):
             output='screen'
         ))
 
-    # Foxglove bridge
-    if use_foxglove:
-        nodes.append(Node(
-            package='foxglove_bridge',
-            executable='foxglove_bridge',
-            parameters=[{'use_sim_time': use_sim_time == 'true'}],
-            output='screen'
-        ))
-
     return nodes
 
 
@@ -241,8 +230,6 @@ def generate_launch_description():
                               description='Use simulation time'),
         DeclareLaunchArgument('use_rviz', default_value='false',
                               description='Launch RViz'),
-        DeclareLaunchArgument('foxglove', default_value='true',
-                              description='Launch Foxglove bridge (connect via ws://localhost:8765)'),
         DeclareLaunchArgument('resolution', default_value='0.05',
                               description='Occupancy grid resolution'),
         DeclareLaunchArgument('load_state_filename', default_value='',
