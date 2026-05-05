@@ -1,5 +1,23 @@
 # Changelog
 
+## [Unreleased] — Phase P6: Config structure (refactor)
+
+### Changed
+- `config/slam/mid360.yaml`: header docstring + category separators (TF/COMMON/PREPROCESS/MAPPING/PUBLISH/PCD_SAVE) + unit annotations ([m]/[s]/[Hz]/[deg]) + [Static]/[Dynamic] tags
+- `config/localization/localization.yaml`: header docstring + category separators (MAP/REGISTRATION/INITIAL POSE/GLOBAL LOCALIZATION/KALMAN FILTER/SUBMAP UPDATE/DEBUG/TF FRAMES/OCCUPANCY GRID) + unit annotations + [Static] tags
+
+### Added
+- No new parameters — documentation only
+
+### Verification
+- colcon build PASS (fast_lio 0.26s)
+- yaml.safe_load PASS (both yaml files)
+- ros2 launch fast_lio mapping.launch.py startup: no parse errors
+
+### Notes
+- scan_publish_en working-tree edit (false→true) excluded from this commit — unrelated user edit
+- Values unchanged — cosmetic / documentation only per spec §2.7
+
 ## [Unreleased] — Phase P5a: Launch arg standardization (refactor)
 
 ### Changed (BREAKING — external launch invocations)

@@ -1,12 +1,19 @@
+-- ============================================================================
+-- Cartographer 2D SLAM configuration (Livox MID360)
+-- ============================================================================
+-- Parameter Types:
+--   [Static]  - Cartographer does not support runtime parameter change
+--              All values here are effectively static.
+-- ============================================================================
+-- Environment variables (set by launch file):
+--   CARTOGRAPHER_INPUT_TYPE: "livox" or "pointcloud2"
+--   CARTOGRAPHER_LOCALIZATION: "true" or "false"
+-- ============================================================================
 -- Copyright 2024
 -- Livox Mid-360 2D SLAM unified configuration
 --
 -- Supports both Livox CustomMsg and PointCloud2 input types,
 -- and both mapping and localization modes.
---
--- Environment variables (set by launch file):
---   CARTOGRAPHER_INPUT_TYPE: "livox" or "pointcloud2"
---   CARTOGRAPHER_LOCALIZATION: "true" or "false"
 --
 -- Usage:
 --   ros2 launch cartographer_ros slam.launch.py
@@ -24,7 +31,9 @@ options = {
   map_builder = MAP_BUILDER,
   trajectory_builder = TRAJECTORY_BUILDER,
 
-  -- Frame configuration
+  -- ==========================================================================
+  -- FRAMES [Static]
+  -- ==========================================================================
   -- TF tree: map -> odom -> base_link -> {imu_link, livox_link, sonar_link}
   -- Note: base_link children are published by boat_description URDF
   map_frame = "map",
@@ -35,7 +44,9 @@ options = {
   publish_frame_projected_to_2d = true,
   use_pose_extrapolator = true,
 
-  -- Sensor configuration
+  -- ==========================================================================
+  -- SENSORS [Static]
+  -- ==========================================================================
   use_odometry = false,
   use_nav_sat = false,
   use_landmarks = false,
@@ -45,14 +56,19 @@ options = {
   num_point_clouds = 0,
   num_livox_points = 0,
 
-  -- TF and publishing
-  lookup_transform_timeout_sec = 0.2,
-  submap_publish_period_sec = 0.3,
-  pose_publish_period_sec = 5e-3,
-  trajectory_publish_period_sec = 30e-3,  -- NOTE: Set to 999999. to hide frozen trajectory in localization mode
+  -- ==========================================================================
+  -- TF AND PUBLISHING [Static]
+  -- ==========================================================================
+  lookup_transform_timeout_sec = 0.2,  -- [s]
+  submap_publish_period_sec = 0.3,     -- [s]
+  pose_publish_period_sec = 5e-3,      -- [s]
+  trajectory_publish_period_sec = 30e-3,  -- [s] NOTE: Set to 999999. to hide frozen trajectory in localization mode
   publish_odometry = true,             -- /cartographer_2d/odometry
 
-  -- Sampling ratios (1.0 = use all data)
+  -- ==========================================================================
+  -- SAMPLING RATIOS [Static]
+  -- ==========================================================================
+  -- 1.0 = use all data
   rangefinder_sampling_ratio = 1.,
   odometry_sampling_ratio = 1.,
   fixed_frame_pose_sampling_ratio = 1.,
@@ -67,8 +83,14 @@ else
   options.num_point_clouds = 1
 end
 
+-- ==========================================================================
+-- MAP BUILDER [Static]
+-- ==========================================================================
 MAP_BUILDER.use_trajectory_builder_2d = true
 
+-- ==========================================================================
+-- TRAJECTORY BUILDER [Static]
+-- ==========================================================================
 -- Livox Mid-360 sensor characteristics
 -- FOV: 360deg horizontal, -7 to +52 deg vertical
 -- Range: 0.1m - 40m (70m @10% reflectivity)
@@ -77,28 +99,28 @@ TRAJECTORY_BUILDER_2D.num_accumulated_range_data = 1
 TRAJECTORY_BUILDER_2D.use_imu_data = true
 
 -- Range and height filtering for 3D to 2D projection
-TRAJECTORY_BUILDER_2D.min_range = 0.3
-TRAJECTORY_BUILDER_2D.max_range = 30.0
-TRAJECTORY_BUILDER_2D.min_z = -0.5
-TRAJECTORY_BUILDER_2D.max_z = 1.5
+TRAJECTORY_BUILDER_2D.min_range = 0.3   -- [m]
+TRAJECTORY_BUILDER_2D.max_range = 30.0  -- [m]
+TRAJECTORY_BUILDER_2D.min_z = -0.5      -- [m]
+TRAJECTORY_BUILDER_2D.max_z = 1.5       -- [m]
 
 -- Voxel filter (downsampling)
-TRAJECTORY_BUILDER_2D.voxel_filter_size = 0.05
+TRAJECTORY_BUILDER_2D.voxel_filter_size = 0.05  -- [m]
 
 -- Adaptive voxel filter for submap insertion
-TRAJECTORY_BUILDER_2D.adaptive_voxel_filter.max_length = 0.5
+TRAJECTORY_BUILDER_2D.adaptive_voxel_filter.max_length = 0.5   -- [m]
 TRAJECTORY_BUILDER_2D.adaptive_voxel_filter.min_num_points = 200
-TRAJECTORY_BUILDER_2D.adaptive_voxel_filter.max_range = 30.0
+TRAJECTORY_BUILDER_2D.adaptive_voxel_filter.max_range = 30.0   -- [m]
 
 -- Loop closure scan matching
-TRAJECTORY_BUILDER_2D.loop_closure_adaptive_voxel_filter.max_length = 0.9
+TRAJECTORY_BUILDER_2D.loop_closure_adaptive_voxel_filter.max_length = 0.9   -- [m]
 TRAJECTORY_BUILDER_2D.loop_closure_adaptive_voxel_filter.min_num_points = 100
-TRAJECTORY_BUILDER_2D.loop_closure_adaptive_voxel_filter.max_range = 30.0
+TRAJECTORY_BUILDER_2D.loop_closure_adaptive_voxel_filter.max_range = 30.0   -- [m]
 
 -- Real-time correlative scan matcher (coarse matching)
 TRAJECTORY_BUILDER_2D.use_online_correlative_scan_matching = true
-TRAJECTORY_BUILDER_2D.real_time_correlative_scan_matcher.linear_search_window = 0.15
-TRAJECTORY_BUILDER_2D.real_time_correlative_scan_matcher.angular_search_window = math.rad(20.)
+TRAJECTORY_BUILDER_2D.real_time_correlative_scan_matcher.linear_search_window = 0.15  -- [m]
+TRAJECTORY_BUILDER_2D.real_time_correlative_scan_matcher.angular_search_window = math.rad(20.)  -- [rad] (20 deg)
 TRAJECTORY_BUILDER_2D.real_time_correlative_scan_matcher.translation_delta_cost_weight = 1e-1
 TRAJECTORY_BUILDER_2D.real_time_correlative_scan_matcher.rotation_delta_cost_weight = 1e-1
 
@@ -109,17 +131,19 @@ TRAJECTORY_BUILDER_2D.ceres_scan_matcher.rotation_weight = 40.
 TRAJECTORY_BUILDER_2D.ceres_scan_matcher.ceres_solver_options.max_num_iterations = 20
 
 -- Motion filter (keyframe selection)
-TRAJECTORY_BUILDER_2D.motion_filter.max_time_seconds = 0.5
-TRAJECTORY_BUILDER_2D.motion_filter.max_distance_meters = 0.2
-TRAJECTORY_BUILDER_2D.motion_filter.max_angle_radians = math.rad(5.)
+TRAJECTORY_BUILDER_2D.motion_filter.max_time_seconds = 0.5     -- [s]
+TRAJECTORY_BUILDER_2D.motion_filter.max_distance_meters = 0.2  -- [m]
+TRAJECTORY_BUILDER_2D.motion_filter.max_angle_radians = math.rad(5.)  -- [rad] (5 deg)
 
 -- Submaps
 TRAJECTORY_BUILDER_2D.submaps.num_range_data = 90
-TRAJECTORY_BUILDER_2D.submaps.grid_options_2d.resolution = 0.05
+TRAJECTORY_BUILDER_2D.submaps.grid_options_2d.resolution = 0.05  -- [m] grid cell size
 TRAJECTORY_BUILDER_2D.submaps.range_data_inserter.probability_grid_range_data_inserter.hit_probability = 0.55
 TRAJECTORY_BUILDER_2D.submaps.range_data_inserter.probability_grid_range_data_inserter.miss_probability = 0.49
 
--- Pose graph optimization
+-- ==========================================================================
+-- POSE GRAPH [Static]
+-- ==========================================================================
 if localization then
   -- Pure localization mode
   TRAJECTORY_BUILDER.pure_localization_trimmer = {
