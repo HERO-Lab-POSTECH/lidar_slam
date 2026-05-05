@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased] — Phase P4a: QoS helper module (refactor)
+
+### Added
+- `include/fast_lio/qos.hpp` — workspace QoS 3-tier helper (SENSOR/RELIABLE/LATCHED) per spec §2.4
+
+### Verification
+- colcon build PASS
+
+---
+
 ## [Unreleased] — Phase P3: TF naming standard (refactor)
 
 ### Changed
