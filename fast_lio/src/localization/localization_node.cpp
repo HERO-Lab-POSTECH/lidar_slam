@@ -326,8 +326,13 @@ void LocalizationNode::initialPoseCallback(const geometry_msgs::msg::PoseWithCov
         msg->pose.pose.position.z);
 
     mat_odom2map_ = mat_initialpose_;
-    loc_initialized_ = false;  // Re-initialize localization
-    RCLCPP_INFO(this->get_logger(), "Initial pose updated, re-initializing localization");
+    // Signal localizationLoop to re-run initializeLocalization() at the top
+    // of its next iteration. Do NOT touch loc_initialized_ here — the loop
+    // owns that state and will reset it during the re-init handshake.
+    reinit_requested_.store(true);
+    RCLCPP_INFO(this->get_logger(),
+                "Re-initialization requested by /initialpose hint at [%.2f, %.2f, %.2f]",
+                msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z);
 }
 
 // ==================== main ====================

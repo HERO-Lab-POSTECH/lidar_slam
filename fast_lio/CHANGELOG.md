@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.0.3] — 2026-05-06 (fix)
+
+### Fixed
+- `localization_node`: `/initialpose` hints from RViz / pkrc_visualizer Pose Estimate are now honored immediately. The previous code wrote `loc_initialized_ = false` from the callback, but the main loop never read that flag — it just kept running single-pass `performLocalizationStep(false)` whose fitness gate (≥0.5) typically rejected the hint-seeded update, so the user click decayed silently. Click-to-snap now converges in seconds instead of ~60 s.
+
+### Changed
+- `localization_node.h`: new `std::atomic<bool> reinit_requested_{false}` member alongside `running_`.
+- `localization_node.cpp` (`initialPoseCallback`): sets `reinit_requested_.store(true)` and logs the requested xyz; no longer touches `loc_initialized_` (the loop owns that state).
+- `localization_engine.cpp` (`localizationLoop`): top of the main `while` body atomically exchanges the flag and, when set, replays `initializeLocalization()` plus a Kalman re-seed before resuming tracking. `initializeLocalization()` itself is unchanged — its existing `mat_initialpose_.norm() < 0.1` branch already routes user-supplied hints around global FPFH and into the multi-pass init ICP path.
+
+### Verification
+- colcon build PASS (fast_lio).
+- Manual smoke: launch node with a missing map → clean shutdown; launch with a real map and bag → normal init + tracking unchanged.
+- Regression A (no-hint): v1.0.2 baseline vs v1.0.3 candidate on UCRC bag, last-100-pose mean Δposition ≤ 0.05 m, Δyaw ≤ 1°. (Manual smoke in PR test plan.)
+- Regression B (hint fast-path): bag replay + Pose Estimate click ~2 m off → confidence ≥ 0.5 within 5 s. (Manual smoke in PR test plan.)
+
+### Notes
+- No public API, topic, or QoS changes. ROS 2 graph identical to v1.0.2.
+- The previous `// Re-initialize localization` comment in the callback was aspirational; this patch makes it true.
+
 ## [1.0.2] — 2026-05-06 (fix)
 
 ### Fixed
