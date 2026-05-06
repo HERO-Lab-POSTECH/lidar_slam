@@ -116,6 +116,7 @@ def _setup_nodes(context):
             package='rviz2',
             executable='rviz2',
             arguments=['-d', rviz_config_path],
+            parameters=[{'use_sim_time': use_sim_time == 'true'}],
         ))
 
     # Robot state publisher (boat_description URDF)

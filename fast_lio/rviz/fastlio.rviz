@@ -38,7 +38,7 @@ Visualization Manager:
           Value: true
         body:
           Value: true
-        camera_init:
+        odom:
           Value: true
         range_link:
           Value: true
@@ -48,7 +48,7 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        camera_init:
+        odom:
           body:
             {}
       Update Interval: 0
@@ -90,7 +90,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /fast_lio/odometry
+        Value: /localization/fast_lio/odometry
       Value: false
     - Alpha: 1
       Buffer Length: 1
@@ -117,7 +117,7 @@ Visualization Manager:
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
-        Reliability Policy: Reliable
+        Reliability Policy: Best Effort
         Value: /fast_lio/debug/path
       Value: true
     - Alpha: 1
@@ -149,8 +149,8 @@ Visualization Manager:
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /fast_lio/cloud_registered_body
+        Reliability Policy: Best Effort
+        Value: /localization/fast_lio/points_body
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -183,8 +183,8 @@ Visualization Manager:
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /fast_lio/debug/cloud_effected
+        Reliability Policy: Best Effort
+        Value: /fast_lio/debug/points_effected
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
@@ -217,7 +217,7 @@ Visualization Manager:
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
-        Reliability Policy: Reliable
+        Reliability Policy: Best Effort
         Value: /fast_lio/debug/map
       Use Fixed Frame: true
       Use rainbow: true
@@ -225,7 +225,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 0; 0; 0
-    Fixed Frame: camera_init
+    Fixed Frame: odom
     Frame Rate: 30
   Name: root
   Tools:

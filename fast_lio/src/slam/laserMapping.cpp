@@ -745,6 +745,7 @@ void publish_path(rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pubPath)
                 path.poses.erase(path.poses.begin());
             }
         }
+        path.header.stamp = msg_body_pose.header.stamp;
         pubPath->publish(path);
     }
 }
