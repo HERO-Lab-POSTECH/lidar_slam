@@ -66,7 +66,12 @@
             path_max_poses: 3600         # Cap path.poses ring-buffer (~1h @ 1Hz publish rate).
                                          # 0 or negative disables cap (unbounded — risk of viz crash on long runs).
             map_en: false                # map visualization (disable for localization mode)
-            scan_publish_en: false       # point cloud in world-frame (disable for localization mode)
+            scan_publish_en: false       # /fast_lio/debug/points_world (world-frame cloud).
+                                         # NOTE: laserMapping.cpp creates the publisher only when
+                                         # (scan_publish_en || pcd_save_en) is true. mapping mode keeps
+                                         # pcd_save_en=true so cloud still publishes here. localization
+                                         # mode disables pcd_save and overrides this to true via launch
+                                         # arg (see launch/localization.launch.py).
             effect_map_en: false         # ICP effective points
             dense_publish_en: true       # dense vs sparse point cloud output
 
