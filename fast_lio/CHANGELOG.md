@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased] — Post-Audit Fix B-1 + B-2 (fix)
+
+### Fixed
+- B-1: localization_node.cpp cloud subscription topic `/localization/fast_lio/cloud_body` → `/localization/fast_lio/points_body` (publisher uses `points_body`; PR-A introduced silent ICP data loss).
+- B-2: localization_node.cpp subscriber QoS — sub_odom_ now `pkrc_qos::reliable_qos()`, sub_cloud_ now `pkrc_qos::sensor_qos()` (matches publisher QoS profiles).
+
+### Verification
+- colcon build PASS
+- grep `/localization/fast_lio/cloud_body` runtime = 0 hits
+
+### Notes
+- Triggered by 2026-05-06 second-pass audit on PR-A1.
+
 ## [Unreleased] — Phase P9: Post-merge fixes (fix)
 
 ### Fixed
