@@ -31,8 +31,15 @@ TOPICS
     - /localization/fast_lio/points_body (sensor_msgs/PointCloud2) - from fast_lio
   Output:
     - /localization/fast_lio/odometry (nav_msgs/Odometry)
+    - /localization/fast_lio/points_body (sensor_msgs/PointCloud2)
     - /localization/fast_lio_loc/odometry (nav_msgs/Odometry) - map-aligned pose
     - /localization/fast_lio_loc/confidence (std_msgs/Float32)
+    - /localization/fast_lio_loc/occupancy_grid (nav_msgs/OccupancyGrid, latched)
+    - /localization/fast_lio_loc/map (sensor_msgs/PointCloud2, latched)
+
+  Optional debug outputs (silent by default; opt in via config or CLI override):
+    - /fast_lio/debug/path           — `publish.path_en:=true`
+    - /fast_lio/debug/points_world   — `publish.scan_publish_en:=true`
 
 ================================================================================
 EXAMPLES
@@ -111,11 +118,6 @@ def generate_launch_description():
             {
                 'use_sim_time': use_sim_time,
                 'pcd_save.pcd_save_en': False,  # Disable map saving in localization mode
-                'publish.scan_publish_en': True,  # Force /fast_lio/debug/points_world on for visualizers.
-                                                  # mid360.yaml has it false; in mapping mode the publisher
-                                                  # stays alive via pcd_save_en=true, but localization mode
-                                                  # disables pcd_save (above), so without this override the
-                                                  # publisher is never created and the topic is silent.
             }
         ],
         output='screen'

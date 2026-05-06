@@ -43,8 +43,12 @@ TOPICS
   Output:
     - /localization/fast_lio/odometry (nav_msgs/Odometry)
     - /localization/fast_lio/points_body (sensor_msgs/PointCloud2)
-    - /fast_lio/debug/path (nav_msgs/Path)
-    - /fast_lio/debug/points_world (sensor_msgs/PointCloud2, when scan_publish_en=true)
+
+  Optional debug outputs (silent by default; opt in via config or CLI override):
+    - /fast_lio/debug/path           — `publish.path_en:=true`
+    - /fast_lio/debug/points_world   — `publish.scan_publish_en:=true`
+    - /fast_lio/debug/points_effected — `publish.effect_map_en:=true`
+    - /fast_lio/debug/map            — `publish.map_en:=true`
 
 ================================================================================
 EXAMPLES
@@ -123,8 +127,7 @@ def _setup_nodes(context):
         executable='fastlio_mapping',
         parameters=[config_path,
                     {'use_sim_time': use_sim_time == 'true',
-                     'pcd_save.save_path': resolved_save_path,
-                     'publish.scan_publish_en': True}],
+                     'pcd_save.save_path': resolved_save_path}],
         output='screen'
     )
     nodes.append(fast_lio_node)
