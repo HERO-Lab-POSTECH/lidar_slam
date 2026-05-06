@@ -140,8 +140,8 @@ private:
 
     // Frame names
     std::string map_frame_ = "map";
-    std::string odom_frame_ = "camera_init";
-    std::string body_frame_ = "body";
+    std::string odom_frame_ = "odom";
+    std::string body_frame_ = "base_link";
 
     // State
     rclcpp::Time latest_odom_time_;

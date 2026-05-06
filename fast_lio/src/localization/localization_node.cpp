@@ -182,11 +182,11 @@ LocalizationNode::LocalizationNode()
 
     // Create subscribers
     sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>(
-        "/fast_lio/odometry", 50,
+        "/localization/fast_lio/odometry", 50,
         std::bind(&LocalizationNode::odomCallback, this, std::placeholders::_1));
 
     sub_cloud_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-        "/fast_lio/cloud_registered_body", 50,
+        "/localization/fast_lio/cloud_body", 50,
         std::bind(&LocalizationNode::cloudCallback, this, std::placeholders::_1));
 
     sub_initialpose_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(

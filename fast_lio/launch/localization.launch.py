@@ -28,9 +28,9 @@ TOPICS
     - /livox/lidar (livox_ros_driver2/CustomMsg)
     - /livox/imu (sensor_msgs/Imu)
   Output:
-    - /fast_lio/odometry (nav_msgs/Odometry)
-    - /fast_lio/localization/odometry (nav_msgs/Odometry) - map-aligned pose
-    - /fast_lio/cloud_registered (sensor_msgs/PointCloud2)
+    - /localization/fast_lio/odometry (nav_msgs/Odometry)
+    - /localization/fast_lio_loc/odometry (nav_msgs/Odometry) - map-aligned pose
+    - /localization/fast_lio_loc/confidence (std_msgs/Float32)
 
 ================================================================================
 EXAMPLES

@@ -18,7 +18,7 @@ namespace localization {
 struct TfPublisherConfig
 {
     std::string map_frame = "map";
-    std::string odom_frame = "camera_init";
+    std::string odom_frame = "odom";
     bool occupancy_grid_publish = true;
     double occupancy_grid_resolution = 0.05;
     double occupancy_grid_z_min = -0.5;
