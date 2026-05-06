@@ -190,7 +190,7 @@ LocalizationNode::LocalizationNode()
         std::bind(&LocalizationNode::cloudCallback, this, std::placeholders::_1));
 
     sub_initialpose_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
-        "/initialpose", 10,
+        "/initialpose", pkrc_qos::reliable_qos(),
         std::bind(&LocalizationNode::initialPoseCallback, this, std::placeholders::_1));
 
     // TF / map / occupancy grid publisher

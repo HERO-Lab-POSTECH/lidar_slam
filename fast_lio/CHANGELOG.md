@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased] — Post-Audit Fix PR-E (fix)
+
+### Changed
+- `launch/localization.launch.py` docstring TOPICS Input — `/livox/lidar` → `/sensor/lidar/livox_mid360/points`, `/livox/imu` → `/sensor/ins/livox_mid360/imu` (H-4)
+- `launch/mapping.launch.py` docstring TOPICS Input/Output — livox topic names corrected; `/fast_lio/path` → `/fast_lio/debug/path` (H-5)
+- `src/slam/laserMapping.cpp` lidar/IMU subscriber QoS — `qos_reliability` yaml 파라미터 분기 제거, `rclcpp::QoS(10)` / `rclcpp::SensorDataQoS()` 로컬 패턴 → `pkrc_qos::sensor_qos()` (M-2). depth 5로 통일.
+- `src/localization/localization_node.cpp:193` `sub_initialpose_` QoS — `10` → `pkrc_qos::reliable_qos()` (L-1, style only).
+
+### Verification
+- colcon build PASS (56.2s, fast_lio)
+
 ## [Unreleased] — Pre-experiment Fix H-1 (fix)
 
 ### Changed

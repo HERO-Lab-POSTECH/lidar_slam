@@ -980,27 +980,15 @@ public:
         kf.init_dyn_share(get_f, df_dx, df_dw, h_share_model, NUM_MAX_ITERATIONS, epsi);
 
         /*** ROS subscribe initialization ***/
-        // Get QoS reliability setting (reliable or best_effort)
-        string qos_reliability_str;
-        this->get_parameter_or<string>("qos_reliability", qos_reliability_str, "best_effort");
-        rclcpp::QoS sensor_qos(10);
-        if (qos_reliability_str == "best_effort") {
-            sensor_qos = rclcpp::SensorDataQoS();
-            RCLCPP_INFO(this->get_logger(), "QoS reliability: BEST_EFFORT");
-        } else {
-            // Default: RELIABLE (rclcpp::QoS(10) is already RELIABLE)
-            RCLCPP_INFO(this->get_logger(), "QoS reliability: RELIABLE");
-        }
-
         if (p_pre->lidar_type == AVIA)
         {
-            sub_pcl_livox_ = this->create_subscription<livox_driver::msg::CustomMsg>(lid_topic, sensor_qos, livox_pcl_cbk);
+            sub_pcl_livox_ = this->create_subscription<livox_driver::msg::CustomMsg>(lid_topic, pkrc_qos::sensor_qos(), livox_pcl_cbk);
         }
         else
         {
-            sub_pcl_pc_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(lid_topic, sensor_qos, standard_pcl_cbk);
+            sub_pcl_pc_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(lid_topic, pkrc_qos::sensor_qos(), standard_pcl_cbk);
         }
-        sub_imu_ = this->create_subscription<sensor_msgs::msg::Imu>(imu_topic, sensor_qos, imu_cbk);
+        sub_imu_ = this->create_subscription<sensor_msgs::msg::Imu>(imu_topic, pkrc_qos::sensor_qos(), imu_cbk);
 
         // Required publishers (used by SC-PGO)
         pubOdomAftMapped_ = this->create_publisher<nav_msgs::msg::Odometry>("/localization/fast_lio/odometry", pkrc_qos::reliable_qos());

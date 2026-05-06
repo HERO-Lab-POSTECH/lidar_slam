@@ -25,8 +25,8 @@ TF TREE (provided by boat_description URDF)
 TOPICS
 ================================================================================
   Input:
-    - /livox/lidar (livox_ros_driver2/CustomMsg)
-    - /livox/imu (sensor_msgs/Imu)
+    - /sensor/lidar/livox_mid360/points (livox_ros_driver2/CustomMsg)
+    - /sensor/ins/livox_mid360/imu (sensor_msgs/Imu)
     - /localization/fast_lio/odometry (nav_msgs/Odometry) - from fast_lio
     - /localization/fast_lio/points_body (sensor_msgs/PointCloud2) - from fast_lio
   Output:
