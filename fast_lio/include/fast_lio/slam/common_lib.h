@@ -263,7 +263,13 @@ rclcpp::Time get_ros_time(double timestamp)
 {
     int32_t sec = std::floor(timestamp);
     auto nanosec_d = (timestamp - std::floor(timestamp)) * 1e9;
-    uint32_t nanosec = nanosec_d;
+    // Floating-point rounding can push nanosec_d up to 1e9 when the fractional
+    // part is just below 1.0; rclcpp::Time(sec, 1000000000) wraps incorrectly.
+    if (nanosec_d >= 1e9) {
+        sec += 1;
+        nanosec_d -= 1e9;
+    }
+    uint32_t nanosec = static_cast<uint32_t>(nanosec_d);
     return rclcpp::Time(sec, nanosec);
 }
 

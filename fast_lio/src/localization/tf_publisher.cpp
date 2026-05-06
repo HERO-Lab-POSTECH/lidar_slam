@@ -91,10 +91,14 @@ void TfPublisher::start()
 {
     publishTF(node_->now());
 
-    const auto period = std::chrono::duration_cast<std::chrono::milliseconds>(
+    const auto period = std::chrono::duration_cast<std::chrono::nanoseconds>(
         std::chrono::duration<double>(config_.tf_period_seconds));
-    tf_timer_ = node_->create_wall_timer(
-        period, std::bind(&TfPublisher::tfTimerCallback, this));
+    // Use ROS clock (honors use_sim_time) instead of wall clock so the TF
+    // timer fires in lockstep with bag replay; otherwise tf2 lookups during
+    // sim-time replay observe stamps that diverge from bag clock.
+    tf_timer_ = rclcpp::create_timer(
+        node_, node_->get_clock(), rclcpp::Duration(period),
+        std::bind(&TfPublisher::tfTimerCallback, this));
 }
 
 void TfPublisher::tfTimerCallback()
