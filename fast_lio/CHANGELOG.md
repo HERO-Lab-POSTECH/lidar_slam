@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased] — Pre-experiment Fix H-1 (fix)
+
+### Changed
+- `launch/mapping.launch.py`, `launch/localization.launch.py` — pass `use_sim_time` via `launch_arguments` when including `boat_description/robot_state_publisher.launch.py`. Required so RSP runs on sim clock during bag replay.
+
 ## [Unreleased] — Post-Audit Fix B-1 + B-2 (fix)
 
 ### Fixed

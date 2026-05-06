@@ -145,7 +145,8 @@ def generate_launch_description():
     robot_state_publisher = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(boat_desc_path, 'launch', 'robot_state_publisher.launch.py')
-        )
+        ),
+        launch_arguments={'use_sim_time': use_sim_time}.items()
     )
 
     ld = LaunchDescription()

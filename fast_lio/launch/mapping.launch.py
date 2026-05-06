@@ -122,7 +122,8 @@ def _setup_nodes(context):
     nodes.append(IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(boat_desc_path, 'launch', 'robot_state_publisher.launch.py')
-        )
+        ),
+        launch_arguments={'use_sim_time': use_sim_time}.items()
     ))
 
     return nodes
