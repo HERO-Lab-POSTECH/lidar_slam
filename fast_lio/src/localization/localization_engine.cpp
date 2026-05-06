@@ -204,6 +204,31 @@ void LocalizationNode::localizationLoop()
 
     while (running_ && rclcpp::ok())
     {
+        // Honor /initialpose hint before doing tracking work this tick.
+        // exchange(false) atomically reads-and-clears so a callback firing
+        // while we're inside initializeLocalization() queues another re-init
+        // for the next iteration instead of being lost.
+        if (reinit_requested_.exchange(false))
+        {
+            RCLCPP_INFO(this->get_logger(),
+                        "Re-initializing localization from /initialpose hint");
+            loc_initialized_ = false;
+            initializeLocalization();
+
+            Eigen::Matrix4d init_body2map;
+            {
+                std::lock_guard<std::mutex> lock(odom_mutex_);
+                init_body2map = mat_odom2map_ * mat_body2odom_;
+            }
+            kf_x_.init(kalman_params_x_[0], kalman_params_x_[1], init_body2map(0, 3), 1.0);
+            kf_y_.init(kalman_params_y_[0], kalman_params_y_[1], init_body2map(1, 3), 1.0);
+            kf_z_.init(kalman_params_z_[0], kalman_params_z_[1], init_body2map(2, 3), 1.0);
+            loc_initialized_ = true;
+
+            last_loc_time = std::chrono::high_resolution_clock::now();
+            continue;
+        }
+
         auto now = std::chrono::high_resolution_clock::now();
         double elapsed = std::chrono::duration<double>(now - last_loc_time).count();
 
