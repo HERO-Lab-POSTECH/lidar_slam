@@ -29,8 +29,8 @@ TOPICS
     - /livox/lidar (livox_ros_driver2/CustomMsg)
     - /livox/imu (sensor_msgs/Imu)
   Output:
-    - /fast_lio/odometry (nav_msgs/Odometry)
-    - /fast_lio/cloud_registered (sensor_msgs/PointCloud2)
+    - /localization/fast_lio/odometry (nav_msgs/Odometry)
+    - /localization/fast_lio/points_body (sensor_msgs/PointCloud2)
     - /fast_lio/path (nav_msgs/Path)
 
 ================================================================================

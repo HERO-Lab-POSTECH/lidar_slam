@@ -1,5 +1,25 @@
 # Changelog
 
+## [Unreleased] — Phase P9: Post-merge fixes (fix)
+
+### Fixed
+- `src/localization/localization_node.cpp`: subscriber 토픽명을 P4 컨벤션에 맞춰 수정
+  - `/fast_lio/odometry` → `/localization/fast_lio/odometry` (C-1)
+  - `/fast_lio/cloud_registered_body` → `/localization/fast_lio/cloud_body` (C-1)
+- `src/slam/laserMapping.cpp`: `qos_reliability` 기본값 `best_effort`로 변경 (C-1b)
+  - livox driver SensorDataQoS(BEST_EFFORT) publisher와 정합
+- `src/slam/laserMapping.cpp`, `include/fast_lio/localization/localization_node.h`, `include/fast_lio/localization/tf_publisher.h`: 레거시 frame 기본값 REP-105/Autoware 기준으로 통일 (M-1)
+  - `camera_init` → `odom`, `body` → `base_link`
+- `launch/mapping.launch.py`, `launch/localization.launch.py`: TOPICS docstring을 실제 publish 토픽에 맞춰 정렬
+
+### Verification
+- colcon build PASS (fast_lio)
+- grep 검증: `"camera_init"` / `"body"` src/include 0 hits
+- grep 검증: `/fast_lio/odometry` / `/fast_lio/cloud_registered_body` runtime 코드 0 hits
+
+### Notes
+- 2026-05-06 post-merge audit에서 발견된 항목 (docs/superpowers/audits/)
+
 ## [Unreleased] — Phase P7: Map save UX (refactor)
 
 ### Changed

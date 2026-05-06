@@ -76,7 +76,7 @@ mutex mtx_buffer;
 condition_variable sig_buffer;
 
 string lid_topic, imu_topic;
-string odom_frame = "camera_init", body_frame = "body";
+string odom_frame = "odom", body_frame = "base_link";
 
 double res_mean_last = 0.05, total_residual = 0.0;
 double last_timestamp_lidar = 0, last_timestamp_imu = -1.0;
@@ -907,9 +907,9 @@ public:
         this->declare_parameter<bool>("pcd_save.cleanup_parts_after_consolidate", true);
         this->declare_parameter<vector<double>>("mapping.extrinsic_T", vector<double>());
         this->declare_parameter<vector<double>>("mapping.extrinsic_R", vector<double>());
-        this->declare_parameter<string>("tf.odom_frame", "camera_init");
-        this->declare_parameter<string>("tf.body_frame", "body");
-        this->declare_parameter<string>("qos_reliability", "reliable");  // reliable or best_effort
+        this->declare_parameter<string>("tf.odom_frame", "odom");
+        this->declare_parameter<string>("tf.body_frame", "base_link");
+        this->declare_parameter<string>("qos_reliability", "best_effort");  // reliable or best_effort
 
         this->get_parameter_or<bool>("publish.path_en", path_en, true);
         this->get_parameter_or<int>("publish.path_max_poses", path_max_poses, 3600);
@@ -949,8 +949,8 @@ public:
         this->get_parameter_or<bool>("pcd_save.cleanup_parts_after_consolidate", pcd_save_cleanup_parts_after_consolidate, true);
         this->get_parameter_or<vector<double>>("mapping.extrinsic_T", extrinT, vector<double>());
         this->get_parameter_or<vector<double>>("mapping.extrinsic_R", extrinR, vector<double>());
-        this->get_parameter_or<string>("tf.odom_frame", odom_frame, "camera_init");
-        this->get_parameter_or<string>("tf.body_frame", body_frame, "body");
+        this->get_parameter_or<string>("tf.odom_frame", odom_frame, "odom");
+        this->get_parameter_or<string>("tf.body_frame", body_frame, "base_link");
 
         RCLCPP_INFO(this->get_logger(), "p_pre->lidar_type %d", p_pre->lidar_type);
         RCLCPP_INFO(this->get_logger(), "TF frames: %s -> %s", odom_frame.c_str(), body_frame.c_str());
@@ -982,7 +982,7 @@ public:
         /*** ROS subscribe initialization ***/
         // Get QoS reliability setting (reliable or best_effort)
         string qos_reliability_str;
-        this->get_parameter_or<string>("qos_reliability", qos_reliability_str, "reliable");
+        this->get_parameter_or<string>("qos_reliability", qos_reliability_str, "best_effort");
         rclcpp::QoS sensor_qos(10);
         if (qos_reliability_str == "best_effort") {
             sensor_qos = rclcpp::SensorDataQoS();
