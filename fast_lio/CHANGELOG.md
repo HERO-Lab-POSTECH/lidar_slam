@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.0.2] — 2026-05-06 (fix)
+
+### Fixed
+- `launch/localization.launch.py`: force `publish.scan_publish_en: True` on the FAST-LIO node so `/fast_lio/debug/points_world` is published in localization mode. Without this, the publisher was never created (laserMapping.cpp:1001-1002 creates it only when `scan_pub_en || pcd_save_en`, and the same launch sets `pcd_save_en=False`). This silenced any visualizer or downstream consumer that subscribed to the world-frame cloud during localization runs.
+
+### Changed
+- `config/slam/mid360.yaml`: rewrote the `scan_publish_en: false` comment to explain the real reason (publisher stays alive in mapping mode via `pcd_save_en=true`; localization mode overrides via launch). The old comment "disable for localization mode" was misleading — the override now lives in the localization launch.
+
+### Notes
+- Underlying coupling in `laserMapping.cpp` (`scan_pub_en || pcd_save_en` shared guard for publisher lifetime) is left intact. Splitting the two responsibilities (debug-publish vs. pcd-save) would touch SLAM core code and require regression validation; out of scope for this patch.
+- Algorithm impact: none (publish path is purely a side effect; ICP / IKD-tree / odometry unaffected). Cost is one additional PointCloud2 serialization per scan, only in localization mode.
+
+### Verification
+- colcon build PASS (fast_lio).
+- Manual smoke: localization launch + bag replay → `ros2 topic hz /fast_lio/debug/points_world` returns non-zero rate.
+
 ## [Unreleased] — Post-Audit Fix PR-N (fix)
 
 ### Fixed
