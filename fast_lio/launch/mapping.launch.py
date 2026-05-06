@@ -13,14 +13,26 @@ LAUNCH ARGUMENTS
   output_map_path : Path to save PCD map on shutdown        (default: '' = auto-timestamp under $PKRC_MAP_DIR/fast_lio/<YYYYMMDD_HHMMSS>/)
 
 ================================================================================
-TF TREE (provided by boat_description URDF)
+LAUNCH ARGUMENTS (additional)
 ================================================================================
-  map
-  └── odom
-      └── base_link
-          ├── livox_frame (LiDAR)
-          ├── imu_link
-          └── sonar_link
+  publish_map_tf  : Publish identity map→odom TF for standalone use (default: 'true')
+                    Set to 'false' when combining with cartographer or fast_lio_loc,
+                    which broadcast their own map→odom. Two broadcasters on the same
+                    transform produce undefined behavior.
+
+================================================================================
+TF TREE
+================================================================================
+  Standalone mapping (publish_map_tf:=true, default):
+      map ─── odom ─── base_link ─── livox_frame, imu_link, sonar_link
+       │       │           │
+       │       │           └── (boat_description URDF)
+       │       └── (fast_lio mapping node, dynamic)
+       └── (this launch's static_transform_publisher, identity)
+
+  Combined with cartographer / fast_lio_loc (publish_map_tf:=false):
+      map → odom is broadcast by the other SLAM/localization node;
+      this launch only contributes odom → base_link.
 
 ================================================================================
 TOPICS
@@ -32,12 +44,16 @@ TOPICS
     - /localization/fast_lio/odometry (nav_msgs/Odometry)
     - /localization/fast_lio/points_body (sensor_msgs/PointCloud2)
     - /fast_lio/debug/path (nav_msgs/Path)
+    - /fast_lio/debug/points_world (sensor_msgs/PointCloud2, when scan_publish_en=true)
 
 ================================================================================
 EXAMPLES
 ================================================================================
-  # Basic mapping — map auto-saved to $PKRC_MAP_DIR/fast_lio/<timestamp>/map.pcd
+  # Basic mapping (standalone) — map_to_odom identity TF auto-published
   ros2 launch fast_lio mapping.launch.py
+
+  # Mapping combined with cartographer — disable our identity TF
+  ros2 launch fast_lio mapping.launch.py publish_map_tf:=false
 
   # Mapping without RViz
   ros2 launch fast_lio mapping.launch.py use_rviz:=false
@@ -93,6 +109,7 @@ def _setup_nodes(context):
     use_rviz = LaunchConfiguration('use_rviz').perform(context).lower() == 'true'
     rviz_config_path = LaunchConfiguration('rviz_config_path').perform(context)
     output_map_path_arg = LaunchConfiguration('output_map_path').perform(context)
+    publish_map_tf = LaunchConfiguration('publish_map_tf').perform(context).lower() == 'true'
 
     resolved_save_path = _resolve_map_path(output_map_path_arg, 'fast_lio', 'map.pcd')
 
@@ -106,10 +123,25 @@ def _setup_nodes(context):
         executable='fastlio_mapping',
         parameters=[config_path,
                     {'use_sim_time': use_sim_time == 'true',
-                     'pcd_save.save_path': resolved_save_path}],
+                     'pcd_save.save_path': resolved_save_path,
+                     'publish.scan_publish_en': True}],
         output='screen'
     )
     nodes.append(fast_lio_node)
+
+    # Identity map→odom static TF for standalone mapping. Without this, downstream
+    # consumers (pkrc_visualizer, sonar_3d_reconstruction) lookup map←odom and fail.
+    # Suppress when pairing with cartographer or fast_lio_loc, both of which broadcast
+    # a real map→odom — two broadcasters produce undefined behavior.
+    if publish_map_tf:
+        nodes.append(Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            name='map_to_odom_identity',
+            arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom'],
+            parameters=[{'use_sim_time': use_sim_time == 'true'}],
+            output='screen',
+        ))
 
     if use_rviz:
         nodes.append(Node(
@@ -146,5 +178,8 @@ def generate_launch_description():
             description='RViz config file path'),
         DeclareLaunchArgument('output_map_path', default_value='',
             description='Path to save PCD map on shutdown. Empty = auto-timestamp.'),
+        DeclareLaunchArgument('publish_map_tf', default_value='true',
+            description='Publish identity map→odom TF for standalone mapping. '
+                        'Set false when pairing with cartographer or fast_lio_loc.'),
         OpaqueFunction(function=_setup_nodes),
     ])
