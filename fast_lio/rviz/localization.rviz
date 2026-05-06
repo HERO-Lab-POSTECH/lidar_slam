@@ -36,7 +36,7 @@ Visualization Manager:
         All Enabled: true
         body:
           Value: true
-        camera_init:
+        odom:
           Value: true
         map:
           Value: true
@@ -47,7 +47,7 @@ Visualization Manager:
       Show Names: true
       Tree:
         map:
-          camera_init:
+          odom:
             body:
               {}
       Update Interval: 0
@@ -77,7 +77,7 @@ Visualization Manager:
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
-        Reliability Policy: Reliable
+        Reliability Policy: Best Effort
         Value: /fast_lio/debug/path
       Value: true
     - Alpha: 1
@@ -109,8 +109,8 @@ Visualization Manager:
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
-        Reliability Policy: Reliable
-        Value: /fast_lio/cloud_registered_body
+        Reliability Policy: Best Effort
+        Value: /localization/fast_lio/points_body
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -144,7 +144,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /fast_lio/localization/map
+        Value: /localization/fast_lio_loc/map
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
@@ -160,7 +160,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /fast_lio/localization/occupancy_grid
+        Value: /localization/fast_lio_loc/occupancy_grid
       Use Timestamp: false
       Value: true
     - Angle Tolerance: 0.10000000149011612
@@ -200,7 +200,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /fast_lio/odometry
+        Value: /localization/fast_lio/odometry
       Value: false
     - Angle Tolerance: 0.10000000149011612
       Class: rviz_default_plugins/Odometry
@@ -239,7 +239,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /fast_lio/localization/odometry
+        Value: /localization/fast_lio_loc/odometry
       Value: true
   Enabled: true
   Global Options:

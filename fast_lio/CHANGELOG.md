@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased] — Post-Audit Fix PR-G (fix)
+
+### Changed
+- `rviz/fastlio.rviz`: `Fixed Frame: camera_init` → `odom`; TF Frames + Tree `camera_init` → `odom`. Topics `/fast_lio/odometry` → `/localization/fast_lio/odometry`, `/fast_lio/cloud_registered_body` → `/localization/fast_lio/points_body`, `/fast_lio/debug/cloud_effected` → `/fast_lio/debug/points_effected` (4th audit Critical: post-P3/P15 rename never propagated to rviz config).
+- `rviz/fastlio.rviz`: Reliability Policy Reliable → Best Effort for `/fast_lio/debug/path`, `/localization/fast_lio/points_body`, `/fast_lio/debug/points_effected`, `/fast_lio/debug/map` (publishers use `pkrc_qos::sensor_qos()` BE; Reliable sub never received messages).
+- `rviz/localization.rviz`: TF Frames + Tree `camera_init` → `odom`. Topics `/fast_lio/cloud_registered_body` → `/localization/fast_lio/points_body`, `/fast_lio/localization/map` → `/localization/fast_lio_loc/map`, `/fast_lio/localization/occupancy_grid` → `/localization/fast_lio_loc/occupancy_grid`, `/fast_lio/odometry` → `/localization/fast_lio/odometry`, `/fast_lio/localization/odometry` → `/localization/fast_lio_loc/odometry`.
+- `rviz/localization.rviz`: Path display Reliability → Best Effort; CurrentScan Reliability → Best Effort.
+- `launch/mapping.launch.py`: rviz2 Node `parameters=[{'use_sim_time': use_sim_time == 'true'}]` (without this, rviz uses wall clock during bag replay; localization.launch.py already had this).
+- `src/slam/laserMapping.cpp:publish_path` — `path.header.stamp = msg_body_pose.header.stamp` per call. Without this, Path msg header carried constructor-time wall clock for the entire run.
+
+### Verification
+- colcon build PASS
+
 ## [Unreleased] — Post-Audit Fix PR-E (fix)
 
 ### Changed
