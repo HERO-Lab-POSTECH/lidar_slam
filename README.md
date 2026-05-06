@@ -64,9 +64,9 @@ map
 
 | Topic | Type | Description |
 |-------|------|-------------|
-| `/fast_lio/odometry` | Odometry | LiDAR-Inertial odometry |
-| `/fast_lio/cloud_registered` | PointCloud2 | Registered point cloud |
-| `/fast_lio/path` | Path | Trajectory path |
+| `/localization/fast_lio/odometry` | Odometry | LiDAR-Inertial odometry |
+| `/localization/fast_lio/points_body` | PointCloud2 | Registered point cloud (body frame) |
+| `/fast_lio/debug/path` | Path | Trajectory path (debug, opt-in) |
 
 ### Cartographer
 

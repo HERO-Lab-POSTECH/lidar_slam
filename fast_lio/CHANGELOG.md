@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased] — Post-Audit Fix PR-N (fix)
+
+### Fixed
+- `fast_lio/scripts/regression_test.sh`: `ODOM_TOPIC` default `/fast_lio/odometry` → `/localization/fast_lio/odometry` to track PR-J topic rename (7th audit High N-1).
+- `fast_lio/scripts/regression_test_localization.sh`: `ODOM_TOPIC` default `/fast_lio/localization/odometry` → `/localization/fast_lio_loc/odometry`; comment cite of `/fast_lio/odometry` → `/localization/fast_lio/odometry` (7th audit High N-1).
+
+### Changed
+- `README.md` FAST-LIO topic catalog reflects 8-phase workspace convention rename: `/fast_lio/odometry` → `/localization/fast_lio/odometry`, `/fast_lio/cloud_registered` → `/localization/fast_lio/points_body`, `/fast_lio/path` → `/fast_lio/debug/path` (7th audit Medium N-3).
+
+### Added
+- `.gitignore` (repo root): exclude `build/`, `install/`, `log/`, `fast_lio/PCD/*.pcd`, `*.pyc`, `__pycache__/` to prevent accidental check-in of 164MB PCD outputs and colcon build artefacts (7th audit High N-2).
+
+### Verification
+- regression scripts, README, .gitignore are non-build assets; colcon build skipped (no source change).
+
 ## [Unreleased] — Post-Audit Fix PR-G (fix)
 
 ### Changed
