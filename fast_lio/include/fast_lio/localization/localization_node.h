@@ -148,5 +148,9 @@ private:
     bool loc_initialized_ = false;
     double current_fitness_ = 0.0;
     std::atomic<bool> running_{true};
+    // Set by initialPoseCallback; consumed at the top of localizationLoop's
+    // main iteration to trigger a full re-init (multi-pass ICP) instead of
+    // letting the hint decay through the single-pass tracking loop.
+    std::atomic<bool> reinit_requested_{false};
     std::thread loc_thread_;
 };
