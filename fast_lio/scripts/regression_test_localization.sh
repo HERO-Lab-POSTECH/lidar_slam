@@ -20,11 +20,11 @@ set -eo pipefail
 # ============================================================================
 BAG_PATH="${BAG_PATH:-/workspace/data/2_kiro_watertank/20260122_KIRO/10.90.m3000d.robotX.boat.fastlio.ver1/20260122_134357}"
 MAP_PATH="${MAP_PATH:-/workspace/data/2_kiro_watertank/map/fast_lio/map_v1.pcd}"
-# Custom config skipping global localization with initial_pose from bag's first /localization/fast_lio/odometry.
+# Custom config skipping global localization with initial_pose from bag's first /slam/fast_lio/odometry.
 # Necessary because FPFH+RANSAC global init is non-deterministic and unreliable on this map.
 CONFIG_FILE="${CONFIG_FILE:-/tmp/regression_config/localization_init.yaml}"
 PLAY_DURATION="${PLAY_DURATION:-60}"   # 초; deterministic ICP, no global loc → 빠른 수렴
-ODOM_TOPIC="${ODOM_TOPIC:-/localization/fast_lio_loc/odometry}"
+ODOM_TOPIC="${ODOM_TOPIC:-/slam/fast_lio_loc/odometry}"
 
 OUT_DIR="${OUT_DIR:-/tmp/fast_lio_localization_regression}"
 

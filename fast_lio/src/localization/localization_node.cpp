@@ -177,16 +177,16 @@ LocalizationNode::LocalizationNode()
     RCLCPP_INFO(this->get_logger(), "Map downsampled to %zu points", pcd_map_fine_->points_.size());
 
     // Create publishers
-    pub_odometry_ = this->create_publisher<nav_msgs::msg::Odometry>("/localization/fast_lio_loc/odometry", pkrc_qos::reliable_qos());
-    pub_confidence_ = this->create_publisher<std_msgs::msg::Float32>("/localization/fast_lio_loc/confidence", pkrc_qos::reliable_qos());
+    pub_odometry_ = this->create_publisher<nav_msgs::msg::Odometry>("/slam/fast_lio_loc/odometry", pkrc_qos::reliable_qos());
+    pub_confidence_ = this->create_publisher<std_msgs::msg::Float32>("/slam/fast_lio_loc/confidence", pkrc_qos::reliable_qos());
 
     // Create subscribers
     sub_odom_ = this->create_subscription<nav_msgs::msg::Odometry>(
-        "/localization/fast_lio/odometry", pkrc_qos::reliable_qos(),
+        "/slam/fast_lio/odometry", pkrc_qos::reliable_qos(),
         std::bind(&LocalizationNode::odomCallback, this, std::placeholders::_1));
 
     sub_cloud_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-        "/localization/fast_lio/points_body", pkrc_qos::sensor_qos(),
+        "/slam/fast_lio/points_body", pkrc_qos::sensor_qos(),
         std::bind(&LocalizationNode::cloudCallback, this, std::placeholders::_1));
 
     sub_initialpose_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(

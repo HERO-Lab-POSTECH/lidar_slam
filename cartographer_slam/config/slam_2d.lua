@@ -63,7 +63,7 @@ options = {
   submap_publish_period_sec = 0.3,     -- [s]
   pose_publish_period_sec = 5e-3,      -- [s]
   trajectory_publish_period_sec = 30e-3,  -- [s] NOTE: Set to 999999. to hide frozen trajectory in localization mode
-  publish_odometry = true,             -- /cartographer_2d/odometry
+  publish_odometry = true,             -- /slam/cartographer/odometry
 
   -- ==========================================================================
   -- SAMPLING RATIOS [Static]

@@ -27,19 +27,19 @@ TOPICS
   Input:
     - /sensor/lidar/livox_mid360/points (livox_ros_driver2/CustomMsg)
     - /sensor/ins/livox_mid360/imu (sensor_msgs/Imu)
-    - /localization/fast_lio/odometry (nav_msgs/Odometry) - from fast_lio
-    - /localization/fast_lio/points_body (sensor_msgs/PointCloud2) - from fast_lio
+    - /slam/fast_lio/odometry (nav_msgs/Odometry) - from fast_lio
+    - /slam/fast_lio/points_body (sensor_msgs/PointCloud2) - from fast_lio
   Output:
-    - /localization/fast_lio/odometry (nav_msgs/Odometry)
-    - /localization/fast_lio/points_body (sensor_msgs/PointCloud2)
-    - /localization/fast_lio_loc/odometry (nav_msgs/Odometry) - map-aligned pose
-    - /localization/fast_lio_loc/confidence (std_msgs/Float32)
-    - /localization/fast_lio_loc/occupancy_grid (nav_msgs/OccupancyGrid, latched)
-    - /localization/fast_lio_loc/map (sensor_msgs/PointCloud2, latched)
+    - /slam/fast_lio/odometry (nav_msgs/Odometry)
+    - /slam/fast_lio/points_body (sensor_msgs/PointCloud2)
+    - /slam/fast_lio_loc/odometry (nav_msgs/Odometry) - map-aligned pose
+    - /slam/fast_lio_loc/confidence (std_msgs/Float32)
+    - /slam/fast_lio_loc/occupancy_grid (nav_msgs/OccupancyGrid, latched)
+    - /slam/fast_lio_loc/map (sensor_msgs/PointCloud2, latched)
 
   Optional debug outputs (silent by default; opt in via config or CLI override):
-    - /fast_lio/debug/path           — `publish.path_en:=true`
-    - /fast_lio/debug/points_world   — `publish.scan_publish_en:=true`
+    - /slam/fast_lio/debug/path           — `publish.path_en:=true`
+    - /slam/fast_lio/debug/points_world   — `publish.scan_publish_en:=true`
 
 ================================================================================
 EXAMPLES

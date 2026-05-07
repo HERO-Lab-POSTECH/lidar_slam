@@ -29,12 +29,12 @@ TfPublisher::TfPublisher(rclcpp::Node* node,
     auto map_qos = pkrc_qos::latched_qos();
 
     pub_map_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>(
-        "/localization/fast_lio_loc/map", map_qos);
+        "/slam/fast_lio_loc/map", map_qos);
 
     if (config_.occupancy_grid_publish)
     {
         pub_occupancy_grid_ = node_->create_publisher<nav_msgs::msg::OccupancyGrid>(
-            "/localization/fast_lio_loc/occupancy_grid", map_qos);
+            "/slam/fast_lio_loc/occupancy_grid", map_qos);
     }
 
     tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(node_);

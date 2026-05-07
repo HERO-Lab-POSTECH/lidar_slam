@@ -63,14 +63,14 @@
         publish:
             scan_bodyframe_pub_en: true  # point cloud in body-frame (required for localization)
             # Debug topics: silent by default. Workspace consumers (pkrc_visualizer)
-            # subscribe to /localization/fast_lio/* production topics and reconstruct
+            # subscribe to /slam/fast_lio/* production topics and reconstruct
             # path/world-cloud locally. Flip a flag below to true to opt-in for
             # standalone debugging (e.g. running fast_lio without the visualizer).
-            path_en: false               # /fast_lio/debug/path (nav_msgs/Path)
+            path_en: false               # /slam/fast_lio/debug/path (nav_msgs/Path)
             path_max_poses: 3600         # Cap when path_en=true (~1h @ 1Hz). 0 or negative = unbounded.
-            map_en: false                # /fast_lio/debug/map (accumulated PointCloud2)
-            scan_publish_en: false       # /fast_lio/debug/points_world (world-frame cloud)
-            effect_map_en: false         # /fast_lio/debug/points_effected
+            map_en: false                # /slam/fast_lio/debug/map (accumulated PointCloud2)
+            scan_publish_en: false       # /slam/fast_lio/debug/points_world (world-frame cloud)
+            effect_map_en: false         # /slam/fast_lio/debug/points_effected
             dense_publish_en: true       # dense vs sparse point cloud output
 
         # ==========================================================================

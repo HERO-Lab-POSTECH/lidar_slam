@@ -992,23 +992,23 @@ public:
         sub_imu_ = this->create_subscription<sensor_msgs::msg::Imu>(imu_topic, pkrc_qos::sensor_qos(), imu_cbk);
 
         // Required publishers (used by SC-PGO)
-        pubOdomAftMapped_ = this->create_publisher<nav_msgs::msg::Odometry>("/localization/fast_lio/odometry", pkrc_qos::reliable_qos());
-        pubLaserCloudFull_body_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/localization/fast_lio/points_body", pkrc_qos::sensor_qos());
+        pubOdomAftMapped_ = this->create_publisher<nav_msgs::msg::Odometry>("/slam/fast_lio/odometry", pkrc_qos::reliable_qos());
+        pubLaserCloudFull_body_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/slam/fast_lio/points_body", pkrc_qos::sensor_qos());
         tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
 
         // Debug publishers (conditionally created)
         // Also create if pcd_save_en for map accumulation
         if (scan_pub_en || pcd_save_en) {
-            pubLaserCloudFull_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/fast_lio/debug/points_world", pkrc_qos::sensor_qos());
+            pubLaserCloudFull_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/slam/fast_lio/debug/points_world", pkrc_qos::sensor_qos());
         }
         if (effect_pub_en) {
-            pubLaserCloudEffect_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/fast_lio/debug/points_effected", pkrc_qos::sensor_qos());
+            pubLaserCloudEffect_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/slam/fast_lio/debug/points_effected", pkrc_qos::sensor_qos());
         }
         if (map_pub_en) {
-            pubLaserCloudMap_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/fast_lio/debug/map", pkrc_qos::sensor_qos());
+            pubLaserCloudMap_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/slam/fast_lio/debug/map", pkrc_qos::sensor_qos());
         }
         if (path_en) {
-            pubPath_ = this->create_publisher<nav_msgs::msg::Path>("/fast_lio/debug/path", pkrc_qos::sensor_qos());
+            pubPath_ = this->create_publisher<nav_msgs::msg::Path>("/slam/fast_lio/debug/path", pkrc_qos::sensor_qos());
         }
 
         //------------------------------------------------------------------------------------------------------

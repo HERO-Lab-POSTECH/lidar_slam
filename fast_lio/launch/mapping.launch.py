@@ -41,14 +41,14 @@ TOPICS
     - /sensor/lidar/livox_mid360/points (livox_ros_driver2/CustomMsg)
     - /sensor/ins/livox_mid360/imu (sensor_msgs/Imu)
   Output:
-    - /localization/fast_lio/odometry (nav_msgs/Odometry)
-    - /localization/fast_lio/points_body (sensor_msgs/PointCloud2)
+    - /slam/fast_lio/odometry (nav_msgs/Odometry)
+    - /slam/fast_lio/points_body (sensor_msgs/PointCloud2)
 
   Optional debug outputs (silent by default; opt in via config or CLI override):
-    - /fast_lio/debug/path           — `publish.path_en:=true`
-    - /fast_lio/debug/points_world   — `publish.scan_publish_en:=true`
-    - /fast_lio/debug/points_effected — `publish.effect_map_en:=true`
-    - /fast_lio/debug/map            — `publish.map_en:=true`
+    - /slam/fast_lio/debug/path           — `publish.path_en:=true`
+    - /slam/fast_lio/debug/points_world   — `publish.scan_publish_en:=true`
+    - /slam/fast_lio/debug/points_effected — `publish.effect_map_en:=true`
+    - /slam/fast_lio/debug/map            — `publish.map_en:=true`
 
 ================================================================================
 EXAMPLES
