@@ -25,7 +25,7 @@ OUT_DIR="${OUT_DIR:-/tmp/fast_lio_c2_regression}"
 LAUNCH_PKG=fast_lio
 LAUNCH_FILE=mapping.launch.py
 QOS="${QOS:-best_effort}"
-PATH_TOPIC="${PATH_TOPIC:-/fast_lio/debug/path}"
+PATH_TOPIC="${PATH_TOPIC:-/slam/fast_lio/debug/path}"
 YAML="/workspace/ros2_ws/install/fast_lio/share/fast_lio/config/slam/mid360.yaml"
 YAML_BACKUP=/tmp/mid360_install_c2_backup.yaml
 

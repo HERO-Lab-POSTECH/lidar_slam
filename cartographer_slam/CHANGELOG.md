@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.1.0] — 2026-05-07 (minor)
+
+### Changed
+- All output topic constants in `node_constants.h` switched to absolute paths under the workspace SLAM root `/slam/cartographer/...`. Previous values were relative (`cartographer_2d/...`) which leaked node namespace and required launch-side remapping. New values:
+  - `kOccupancyGridTopic`: `cartographer_2d/map` → `/slam/cartographer/map`
+  - `kScanMatchedPointCloudTopic`: `cartographer_2d/scan_matched_points2` → `/slam/cartographer/scan_matched_points2`
+  - `kSubmapsTopic`: `cartographer_2d/submaps` → `/slam/cartographer/submaps`
+  - `kTrackedPoseTopic`: `cartographer_2d/tracked_pose` → `/slam/cartographer/tracked_pose`
+  - `kOdometryOutputTopic`: `/localization/cartographer/odometry` → `/slam/cartographer/odometry`
+  - `kTrajectoryNodesTopic`: `cartographer_2d/trajectory_nodes` → `/slam/cartographer/trajectory_nodes`
+  - `kLandmarkPosesTopic`: `cartographer_2d/landmark_poses` → `/slam/cartographer/landmark_poses`
+  - `kConstraintsTopic`: `cartographer_2d/constraints` → `/slam/cartographer/constraints`
+- `launch/slam.launch.py` (localization mode): pbstream_map_publisher now receives `-map_topic /slam/cartographer/map` argument instead of remapping `'map' → '/cartographer_2d/map'`. Functionally equivalent but matches `kOccupancyGridTopic` directly.
+- `launch/slam.launch.py` (trajectory_filter): remap targets updated to `/slam/cartographer/trajectory_nodes{,_filtered}`.
+- `src/occupancy_grid_node_main.cpp`: occupancy grid publisher QoS depth `KeepLast(10)` → `KeepLast(1)` to match workspace LATCHED profile (RELIABLE + TRANSIENT_LOCAL + KeepLast(1)). Aligns with `/slam/fast_lio_loc/occupancy_grid` so consumers can use a single QoS profile across both SLAM engines.
+- `config/slam_2d.lua`, `rviz/livox_mid360.rviz`: comment / display references updated to new topic names.
+- Header docstring of `slam.launch.py` lists the full set of `/slam/cartographer/...` outputs (previously listed only a subset).
+
+### Notes
+- Coordinated breaking change with `fast_lio` v1.1.0, `sonar_3d_reconstruction`, `pkrc_visualizer`. All four packages must be upgraded together.
+- TF tree (REP-105) unchanged. `provide_odom_frame=true` and `map_frame="map"` / `odom_frame="odom"` in `slam_2d.lua` still produce the standard `map → odom → base_link` chain.
+- Default cartographer node QoS for non-map output topics (`KeepLast(10)`) is functionally equivalent to `pkrc_qos::reliable_qos()` (RELIABLE + KeepLast(10)). No change required there.
+- Internal subscriber input topics (`scan`, `points2`, `imu`, `odom`, `livox_points`, `fix`, `landmark`) are still relative — they are remapped per-launch to actual sensor sources (`/sensor/lidar/...`, `/sensor/ins/...`).
+
+### Verification
+- grep `/cartographer_2d/` `/localization/cartographer/` in `src/`, `include/`, `launch/`, `config/`, `rviz/`, `scripts/` → 0 hits (CHANGELOG history entries excluded).
+- colcon build PASS (cartographer_slam).
+- Manual smoke: `ros2 topic list | grep ^/slam/cartographer` after `ros2 launch cartographer_slam slam.launch.py` → ≥7 topics in mapping mode.
+
 ## [Unreleased] — Phase P7: Map save UX (refactor)
 
 ### Changed

@@ -102,8 +102,11 @@ Node::Node(const double resolution, const double publish_period_sec)
         callback_group_
         );
 
+  // Workspace LATCHED QoS: RELIABLE + TRANSIENT_LOCAL + KeepLast(1).
+  // Matches /slam/fast_lio_loc/occupancy_grid so consumers can subscribe with
+  // a single QoS profile regardless of which SLAM engine is producing the map.
   occupancy_grid_publisher_ = this->create_publisher<::nav_msgs::msg::OccupancyGrid>(
-      kOccupancyGridTopic, rclcpp::QoS(10).transient_local());
+      kOccupancyGridTopic, rclcpp::QoS(1).transient_local());
 
   occupancy_grid_publisher_timer_ = this->create_wall_timer(
     std::chrono::milliseconds(int(publish_period_sec * 1000)),

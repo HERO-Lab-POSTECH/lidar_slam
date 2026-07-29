@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.1.0] — 2026-05-07 (minor)
+
+### Changed
+- Topic prefix unified from `/localization/...` → `/slam/...` and debug topics moved under the same root. Workspace-wide convention: every SLAM-domain topic now lives under `/slam/<engine>/...`. Renames:
+  - `/localization/fast_lio/odometry` → `/slam/fast_lio/odometry`
+  - `/localization/fast_lio/points_body` → `/slam/fast_lio/points_body`
+  - `/localization/fast_lio_loc/odometry` → `/slam/fast_lio_loc/odometry`
+  - `/localization/fast_lio_loc/confidence` → `/slam/fast_lio_loc/confidence`
+  - `/localization/fast_lio_loc/map` → `/slam/fast_lio_loc/map`
+  - `/localization/fast_lio_loc/occupancy_grid` → `/slam/fast_lio_loc/occupancy_grid`
+  - `/fast_lio/debug/points_world` → `/slam/fast_lio/debug/points_world`
+  - `/fast_lio/debug/points_effected` → `/slam/fast_lio/debug/points_effected`
+  - `/fast_lio/debug/map` → `/slam/fast_lio/debug/map`
+  - `/fast_lio/debug/path` → `/slam/fast_lio/debug/path`
+
+### Notes
+- Coordinated breaking change with `cartographer_slam`, `sonar_3d_reconstruction`, `pkrc_visualizer`. All four packages must be upgraded together; mixed-version deployments will silently lose topic connectivity.
+- TF tree (REP-105 `map → odom → base_link → ...`) unchanged. Frame names are independent of topic names.
+- QoS unchanged (RELIABLE for odometry/confidence/initialpose, SENSOR for point clouds, LATCHED for map/occupancy_grid).
+
+### Verification
+- grep `/localization/` `/fast_lio/debug/` in `src/`, `launch/`, `config/`, `rviz/`, `scripts/` → 0 hits (CHANGELOG history entries excluded).
+- colcon build PASS (fast_lio).
+- Manual smoke: `ros2 topic list | grep ^/slam/fast_lio` after launch → 6 topics in mapping mode, 10 in localization mode.
+
 ## [1.0.2] — 2026-05-06 (fix)
 
 ### Fixed

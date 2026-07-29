@@ -32,15 +32,15 @@ constexpr char kOdometryTopic[] = "odom";
 constexpr char kNavSatFixTopic[] = "fix";
 constexpr char kLandmarkTopic[] = "landmark";
 
-// Output topic names with cartographer_2d prefix
-constexpr char kOccupancyGridTopic[] = "cartographer_2d/map";
-constexpr char kScanMatchedPointCloudTopic[] = "cartographer_2d/scan_matched_points2";
-constexpr char kSubmapsTopic[] = "cartographer_2d/submaps";
-constexpr char kTrackedPoseTopic[] = "cartographer_2d/tracked_pose";
-constexpr char kOdometryOutputTopic[] = "/localization/cartographer/odometry";
-constexpr char kTrajectoryNodesTopic[] = "cartographer_2d/trajectory_nodes";
-constexpr char kLandmarkPosesTopic[] = "cartographer_2d/landmark_poses";
-constexpr char kConstraintsTopic[] = "cartographer_2d/constraints";
+// Output topic names — workspace convention `/slam/<engine>/...`.
+constexpr char kOccupancyGridTopic[] = "/slam/cartographer/map";
+constexpr char kScanMatchedPointCloudTopic[] = "/slam/cartographer/scan_matched_points2";
+constexpr char kSubmapsTopic[] = "/slam/cartographer/submaps";
+constexpr char kTrackedPoseTopic[] = "/slam/cartographer/tracked_pose";
+constexpr char kOdometryOutputTopic[] = "/slam/cartographer/odometry";
+constexpr char kTrajectoryNodesTopic[] = "/slam/cartographer/trajectory_nodes";
+constexpr char kLandmarkPosesTopic[] = "/slam/cartographer/landmark_poses";
+constexpr char kConstraintsTopic[] = "/slam/cartographer/constraints";
 
 // Service names
 constexpr char kFinishTrajectoryServiceName[] = "finish_trajectory";

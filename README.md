@@ -64,17 +64,17 @@ map
 
 | Topic | Type | Description |
 |-------|------|-------------|
-| `/localization/fast_lio/odometry` | Odometry | LiDAR-Inertial odometry |
-| `/localization/fast_lio/points_body` | PointCloud2 | Registered point cloud (body frame) |
-| `/fast_lio/debug/path` | Path | Trajectory path (debug, opt-in) |
+| `/slam/fast_lio/odometry` | Odometry | LiDAR-Inertial odometry |
+| `/slam/fast_lio/points_body` | PointCloud2 | Registered point cloud (body frame) |
+| `/slam/fast_lio/debug/path` | Path | Trajectory path (debug, opt-in) |
 
 ### Cartographer
 
 | Topic | Type | Description |
 |-------|------|-------------|
-| `/cartographer_2d/map` | OccupancyGrid | 2D occupancy grid map |
-| `/cartographer_2d/tracked_pose` | PoseStamped | Current robot pose |
-| `/cartographer_2d/odom` | Odometry | Odometry output |
+| `/slam/cartographer/map` | OccupancyGrid | 2D occupancy grid map |
+| `/slam/cartographer/tracked_pose` | PoseStamped | Current robot pose |
+| `/slam/cartographer/odom` | Odometry | Odometry output |
 
 ## Launch Arguments
 

@@ -44,9 +44,11 @@ TOPICS
     - /sensor/lidar/livox_mid360/points (sensor_msgs/PointCloud2)
     - /sensor/ins/livox_mid360/imu (Imu)
   Output:
-    - /cartographer_2d/map (OccupancyGrid)
-    - /cartographer_2d/submaps, /cartographer_2d/trajectory_nodes
-    - /cartographer_2d/tracked_pose, /cartographer_2d/odom
+    - /slam/cartographer/map (nav_msgs/OccupancyGrid, LATCHED)
+    - /slam/cartographer/odometry (nav_msgs/Odometry)
+    - /slam/cartographer/submaps, /slam/cartographer/trajectory_nodes
+    - /slam/cartographer/tracked_pose, /slam/cartographer/scan_matched_points2
+    - /slam/cartographer/landmark_poses, /slam/cartographer/constraints
 
 ================================================================================
 EXAMPLES
@@ -199,7 +201,10 @@ def launch_setup(context):
 
     # Occupancy grid node
     if use_localization:
-        # Localization mode: use pbstream_map_publisher for clean static map
+        # Localization mode: use pbstream_map_publisher for clean static map.
+        # `-map_topic` overrides the default ("map") to match the workspace
+        # convention `/slam/cartographer/map`; this matches kOccupancyGridTopic
+        # used by occupancy_grid_node in mapping mode.
         nodes.append(Node(
             package='cartographer_slam',
             executable='cartographer_pbstream_map_publisher',
@@ -207,9 +212,9 @@ def launch_setup(context):
             arguments=[
                 '-pbstream_filename', map_path,
                 '-resolution', resolution,
+                '-map_topic', '/slam/cartographer/map',
             ],
             parameters=[{'use_sim_time': use_sim_time == 'true'}],
-            remappings=[('map', '/cartographer_2d/map')],
             output='screen'
         ))
     else:
@@ -237,8 +242,8 @@ def launch_setup(context):
                 {'frozen_trajectory_ids': [0]},  # Filter trajectory 0 (frozen map)
             ],
             remappings=[
-                ('trajectory_node_list', '/cartographer_2d/trajectory_nodes'),
-                ('trajectory_node_list_filtered', '/cartographer_2d/trajectory_nodes_filtered'),
+                ('trajectory_node_list', '/slam/cartographer/trajectory_nodes'),
+                ('trajectory_node_list_filtered', '/slam/cartographer/trajectory_nodes_filtered'),
             ],
             output='screen'
         ))

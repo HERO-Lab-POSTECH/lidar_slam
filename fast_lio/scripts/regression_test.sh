@@ -20,7 +20,7 @@ set -euo pipefail
 # ============================================================================
 BAG_PATH="${BAG_PATH:-/workspace/data/7_ucrc_watertank/20260122_sonar_lidar/m750d_custom_platform/m750d-range15-tilt45-v1}"
 PLAY_DURATION="${PLAY_DURATION:-90}"   # seconds; first 90s only
-ODOM_TOPIC="${ODOM_TOPIC:-/localization/fast_lio/odometry}"
+ODOM_TOPIC="${ODOM_TOPIC:-/slam/fast_lio/odometry}"
 LAUNCH_PKG="${LAUNCH_PKG:-fast_lio}"
 LAUNCH_FILE="${LAUNCH_FILE:-mapping.launch.py}"
 

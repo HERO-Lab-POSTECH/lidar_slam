@@ -27,7 +27,7 @@ except ImportError:
     sys.exit("[plot] matplotlib not installed. apt install python3-matplotlib")
 
 
-def read_xyz(bag_dir: Path, topic: str = "/localization/fast_lio_loc/odometry") -> np.ndarray:
+def read_xyz(bag_dir: Path, topic: str = "/slam/fast_lio_loc/odometry") -> np.ndarray:
     storage = StorageOptions(uri=str(bag_dir), storage_id="sqlite3")
     converter = ConverterOptions(input_serialization_format="cdr", output_serialization_format="cdr")
     reader = SequentialReader()
